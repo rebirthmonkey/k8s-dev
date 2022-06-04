@@ -30,3 +30,18 @@ curl -H 'Host:example.com' http://127.0.0.1:80
 ```shell
 docker build -t ingress-manager:1.0.1 .
 ```
+
+- 启动 ingress manager
+```shell
+kubectl apply -f manifests
+```
+
+- 部署 deployment 和 service
+```shell
+kubectl apply -f deploy-service.yaml 
+```
+
+- check ingress 的自动生成
+```shell
+kubectl get ingress
+```

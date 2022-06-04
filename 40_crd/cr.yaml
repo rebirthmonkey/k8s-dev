@@ -1,0 +1,6 @@
+apiVersion: "wukong.com/v1"
+kind: Crd1
+metadata:
+  name: crd1
+spec:
+  name: cr1
