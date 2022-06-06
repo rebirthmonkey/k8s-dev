@@ -10,28 +10,40 @@ go install ./cmd/{controller-gen,type-scaffold}
 ```
 
 ## Lab
-- 生成 type.go 文件
+- 生成 types.go 文件
 ```shell
-type-scaffold --kind Foo # 需要把内容拷贝到 type.go 文件中 
+type-scaffold --kind Foo # 需要把内容拷贝到 /apis/wukong.com/v1/types.go 文件中 
 ```
 
 - 生成 deepcopy
 ```shell
-controller-gen object paths=./pkg/apis/wukong.com/v1/types.go
+controller-gen object paths=./apis/wukong.com/v1/types.go
 ```
 
-- 制定 marker 标记：register.go 文件
+- 制定 marker 标记：register.go 文件，并添加相应代码
 ```go
-// +groupName=wukong.go
+// +groupName=wukong.com
 package v1
+
+import (
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+)
+
+var (
+	Scheme       = runtime.NewScheme()
+	GroupVersion = schema.GroupVersion{Group: "wukong.com", Version: "v1"}
+	Codecs       = serializer.NewCodecFactory(Scheme)
+)
 ```
 
 - 生成 CRD 文件
 ```shell
-controller-gen crd paths=./... output:crd:dir=congfig/crd 
+controller-gen crd paths=./... output:crd:dir=manifests 
 ```
 
-- 更新 types.go 文件，在 FooSpec 中 添加
+- 更新 types.go 文件，在 FooSpec 中添加
 ```go
 	Name string `json:"name"`
 	Replicas int32 `json:"replicas"`
@@ -39,12 +51,17 @@ controller-gen crd paths=./... output:crd:dir=congfig/crd
 
 - 重新生成 CRD 文件
 ```shell
-controller-gen crd paths=./... output:crd:dir=congfig/crd 
+controller-gen crd paths=./... output:crd:dir=manifests 
+```
+
+- 创建 CRD
+```shell
+kubectl apply -f manifests/wukong.com_foos.yaml 
 ```
 
 - 自建 CR 文件，并 apply
 ```shell
-kubectl apply config/cr/test.yaml 
+kubectl apply -f manifests/cr.yaml
 ```
 
 - 执行 main.go 文件

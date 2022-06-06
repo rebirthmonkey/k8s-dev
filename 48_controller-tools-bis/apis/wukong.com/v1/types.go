@@ -1,8 +1,6 @@
 package v1
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // FooSpec defines the desired state of Foo
 type FooSpec struct {
@@ -18,7 +16,6 @@ type FooStatus struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:subresource:status
 
 // Foo is the Schema for the foos API
 // +k8s:openapi-gen=true
@@ -37,8 +34,4 @@ type FooList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Foo `json:"items"`
-}
-
-func init() {
-	Scheme.AddKnownTypes(GroupVersion, &Foo{}, &FooList{})
 }
