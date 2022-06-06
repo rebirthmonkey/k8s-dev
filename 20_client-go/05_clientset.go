@@ -28,6 +28,6 @@ func main() {
 	if err != nil {
 		println(err)
 	} else {
-		fmt.Println(pod.Name)
+		fmt.Println(pod.Status)
 	}
 }

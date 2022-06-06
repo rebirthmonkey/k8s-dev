@@ -7,6 +7,12 @@
 kubectl api-resources 
 ```
 
+### Properties
+
+- metadata.name：该资源的 ID
+- spec.name：只是一个名为 name 的属性
+
+
 ## Lab
 
 ### CRD
@@ -14,19 +20,12 @@ kubectl api-resources
 - Create CRD
 ```shell
 kubectl apply -f crd.yaml
-kubectl get crd
+kubectl get crds
 ```
 
 - Create CR
 ```shell
 kubectl apply -f cr.yaml
-kubectl get crds 
+kubectl get crd1s 
 ```
 
-### code-generator
-
-- 安装 code-generator
-```shell
-git clone https://github.com/kubernetes/code-generator.git
-go install code-generator/cmd/{client-gen,lister-gen,informer-gen,deepcopy-gen}
-```

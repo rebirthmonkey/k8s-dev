@@ -7,7 +7,7 @@ import (
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	v1 "wukong.com/apis/wukong.com/v1"
+	v1 "wukong.com/pkg/apis/wukong.com/v1"
 )
 
 func main() {

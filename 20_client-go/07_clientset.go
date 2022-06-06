@@ -34,7 +34,7 @@ func main() {
 		// - Use helper functions like e.g. errors.IsNotFound()
 		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
 		namespace := "default"
-		podName := "my-mysql-76688bdc56-r5g78"
+		podName := "test"
 		_, err = clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			fmt.Printf("Pod %s in namespace %s not found\n", podName, namespace)

@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/rebirthmonkey/k8s-dev/30_controller/controller"
+	"github.com/rebirthmonkey/k8s-dev/30_controller/pkg/controller"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

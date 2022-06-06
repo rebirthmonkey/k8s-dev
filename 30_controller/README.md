@@ -1,30 +1,46 @@
 # controller
 
+自定义简单版 controller
+
+
 ## Lab
 
-### Go 启动
+### Install
+
 - 安装 Nginx Ingress Controller
+
+
+### 通过 GO 进程运行
+
+- 启动 controller
+```shell
+go run main.go 
+```
+
 - 部署 deployment 和 service
-- check 自动添加
+```shell
+kubectl apply -f deploy-service.yaml 
+```
+
+- 验证 ingress 是否自动添加
 
 ```shell
 kubectl get ingress # 有ingress，已经自动启动 
 ```
 
-- 删除 annotations
+- 在 service 中删除 annotations
 ```shell
 kubectl edit svc ingress
 kubectl get ingress # ingress自动删除
 ```
 
-- check Ngix 页面
+- 验证 Nginx Service 页面
 ```shell
-curl -H 'Host:example.com' http://127.0.0.1:80
+curl -H 'Host:wukong.com' http://127.0.0.1:80
 ```
 
 
-
-### k8s 启动
+### 通过 k8s 容器运行
 
 - Docker 镜像 build
 ```shell
@@ -41,7 +57,13 @@ kubectl apply -f manifests
 kubectl apply -f deploy-service.yaml 
 ```
 
-- check ingress 的自动生成
+- 验证 ingress 是否自动生成
 ```shell
 kubectl get ingress
 ```
+
+- 验证 Nginx Service 页面
+```shell
+curl -H 'Host:wukong.com' http://127.0.0.1:80
+```
+

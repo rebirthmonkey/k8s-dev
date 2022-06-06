@@ -41,9 +41,8 @@ func main() {
 		},
 	})
 
-	//start informer
 	stopCh := make(chan struct{})
-	factory.Start(stopCh)
-	factory.WaitForCacheSync(stopCh)
-	<-stopCh
+	factory.Start(stopCh)            //start informer
+	factory.WaitForCacheSync(stopCh) // 等待缓存与 APIServer 同步
+	<-stopCh                         // keep the loop
 }

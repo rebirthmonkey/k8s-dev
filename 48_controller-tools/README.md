@@ -12,15 +12,15 @@ go install ./cmd/{controller-gen,type-scaffold}
 ## Lab
 - 生成 types.go 文件
 ```shell
-type-scaffold --kind Foo # 需要把内容拷贝到 /apis/wukong.com/v1/types.go 文件中 
+type-scaffold --kind Foo # 需要把内容拷贝到 /pkg/apis/wukong.com/v1/types.go 文件中 
 ```
 
 - 生成 deepcopy
 ```shell
-controller-gen object paths=./apis/wukong.com/v1/types.go
+controller-gen object paths=./pkg/apis/wukong.com/v1/types.go
 ```
 
-- 制定 marker 标记：register.go 文件，并添加相应代码
+- 制定 marker 标记：/pkg/apis/wukong.com/v1/register.go 文件，并添加相应代码
 ```go
 // +groupName=wukong.com
 package v1
