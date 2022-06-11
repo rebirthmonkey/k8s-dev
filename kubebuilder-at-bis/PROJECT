@@ -1,0 +1,16 @@
+domain: wukong.com
+layout:
+- go.kubebuilder.io/v3
+projectName: kubebuilder-at
+repo: github.com/rebirthmonkey/k8s-dev/kubebuilder-at
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: wukong.com
+  group: cnat
+  kind: At
+  path: github.com/rebirthmonkey/k8s-dev/kubebuilder-at/api/v1alpha1
+  version: v1alpha1
+version: "3"
