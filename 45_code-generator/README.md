@@ -58,3 +58,6 @@ kubectl apply -f manifest/cr.yaml
 go run main.go
 ```
 
+## 标准代码
+
+更新后标准的代码在[这里](../45_code-generator-bis)

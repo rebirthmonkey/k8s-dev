@@ -69,3 +69,7 @@ kubectl apply -f manifests/cr.yaml
 go run main.go 
 ```
 
+## 标准代码
+
+更新后标准的代码在[这里](../48_controller-tools-bis)
+
