@@ -11,20 +11,20 @@ import (
 func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		panic(err.Error())
+		println(err)
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		println(err)
 	} else {
-		fmt.Println("connect k8s success!")
+		println("connect k8s success!")
 	}
 
 	//获取POD
 	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		panic(err.Error())
+		println(err)
 	}
 	fmt.Println(pods.Items[1].Name)
 	fmt.Println(pods.Items[1].CreationTimestamp)

@@ -1,5 +1,11 @@
 # K8s-Dev
 
+## 简介
+
+原生k8s应用指通过kube-apiserver进行交互，可直接查询、更新资源的状态的应用。这类应用强依赖k8s，并在一定程度上可以直接调用k8s的API及相关资源。
+
+<img src="figures/image-20220725092124197.png" alt="image-20220725092124197" style="zoom:50%;" />
+
 ## 基本概念
 
 - [基本概念](10_concepts/README.md)
@@ -11,7 +17,7 @@
 
 ## lab-controller
 
-- [lab-controller](30_lab-controller/README.md)
+- [lab-controller](30_controller/README.md)
 
 ## CRD
 
@@ -36,5 +42,5 @@
 
 ## aggregate
 
-- [aggregate](80_aggregate/README.md)
+- [aggregate](80_aggregate-api/README.md)
 

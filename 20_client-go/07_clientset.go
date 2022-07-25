@@ -14,19 +14,19 @@ import (
 func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		panic(err.Error())
+		println(err)
 	}
 
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		println(err)
 	}
 
 	for {
 		pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
-			panic(err.Error())
+			println(err)
 		}
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 
@@ -42,7 +42,7 @@ func main() {
 			fmt.Printf("Error getting podName %s in namespace %s: %v\n",
 				podName, namespace, statusError.ErrStatus.Message)
 		} else if err != nil {
-			panic(err.Error())
+			println(err)
 		} else {
 			fmt.Printf("Found podName %s in namespace %s\n", podName, namespace)
 		}

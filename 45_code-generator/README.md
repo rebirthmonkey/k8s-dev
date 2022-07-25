@@ -1,6 +1,8 @@
 # code-generator
 
-使用 code-generator 来创建 CRD 的 deepcopy、clientset、lister、informer
+当需要具体操作一个CRD资源时，需要为该资源配备deepcopy、clientset、lister、informer代码。使用 code-generator 可以自动创建 CRD 的 deepcopy、clientset、lister、informer等所需的代码。
+
+但仍需要手动地去创建 type.go 和 CRD 的 yaml 文件。
 
 
 ## Lab

@@ -1,6 +1,21 @@
 # controller
 
-自定义简单版 controller
+## 简介
+
+在k8s中，controller实现了一个控制循环，它通过kube-apiserver观测集群中的共享状态，进行必要的变更，尝试把资源对应的当前状态期望的目标状态。controller可以对k8s的核心资源（如pod、deployment）等进场操作，通常是controller manager的一部分，但它也可以观察并操作用户自定义资源。
+
+自定义实现一个简单的 controller，其作用是一旦watch到有新的、带有特殊annotation的service资源被添加，则会自动添加ingress资源。
+
+### 控制循环
+
+- 读取资源的状态：通常采用事件驱动模式
+- 改变资源的状态：
+- 通过kube-apiserver更新资源的状态：
+- 循环执行以上3步：
+
+
+
+
 
 
 ## Lab
@@ -28,17 +43,17 @@ kubectl apply -f deploy-service.yaml
 kubectl get ingress # 有ingress，已经自动启动 
 ```
 
-- 在 service 中删除 annotations
-```shell
-kubectl edit svc ingress
-kubectl get ingress # ingress自动删除
-```
-
 - 验证 Nginx Service 页面
 ```shell
 curl -H 'Host:wukong.com' http://127.0.0.1:80
 ```
 
+- 在 service 中删除 annotations
+
+```shell
+kubectl edit svc nginx
+kubectl get ingress # ingress自动删除
+```
 
 ### 通过 k8s 容器运行
 

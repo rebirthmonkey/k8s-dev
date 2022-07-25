@@ -13,13 +13,13 @@ func main() {
 	// config
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		panic(err)
+		println(err)
 	}
 
 	// clientSet
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err)
+		println(err)
 	}
 
 	// get data

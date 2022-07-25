@@ -15,7 +15,7 @@ func main() {
 	// config
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		panic(err)
+		println(err)
 	}
 	config.GroupVersion = &v1.SchemeGroupVersion
 	config.NegotiatedSerializer = scheme.Codecs
@@ -24,12 +24,12 @@ func main() {
 	// REST client
 	restClient, err := rest.RESTClientFor(config)
 	if err != nil {
-		panic(err)
+		println(err)
 	}
 
 	// get data
 	pod := v1.Pod{}
-	err = restClient.Get().Namespace("default").Resource("pods").Name("ubuntu").Do(context.TODO()).Into(&pod)
+	err = restClient.Get().Namespace("default").Resource("pods").Name("test").Do(context.TODO()).Into(&pod)
 	if err != nil {
 		println(err)
 	} else {
