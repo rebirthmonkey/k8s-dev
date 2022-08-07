@@ -1,5 +1,14 @@
 # kube-apiserver
 
+## 简介
+
+kube-apiserver：
+
+- 将k8s的所有资源对象封装成REST风格的API接口进行管理
+- 将集群的所有数据和状态存户的Etcd中
+- 提供丰富的安全访问机制，包括认证、授权及准入控制（admission control）
+- 提供了集群各组件间的通讯和交互功能
+
 ## 处理请求
 
 ### Authentication
@@ -35,8 +44,6 @@ k8s调用外部的access control service来进行用户授权。
 
 发送个`kube-apiserver`的任何一个request都需要通过买个admission controller的检查，如果不通过则`kube-apiserver`拒绝此调用请求。
 
-
-
 An admission controller is a piece of code that intercepts requests to the Kubernetes API server prior to persistence of the object, but after the request is authenticated and authorized. 
 
 #### 类型
@@ -48,59 +55,14 @@ Admission controllers may be "validating", "mutating":
 
 The admission control process proceeds in two phases. In the first phase, mutating admission controllers are run. In the second phase, validating admission controllers are run. 
 
+#### vs. Webhook
 
+admission controller是一组标准的控制器，拦截API请求，进行请求验证/修改。admission webhook就是由这些控制器调用的，运行在k8s外部的http服务，用来实现修改、验证等逻辑。因为这部分check牵涉到“业务逻辑”，不适合编写在k8s里面，所以采用动态扩展、可拔插的模式。
 
 ### ServiceAccount
 
 Service account是一种给pod里的进程而不是给用户的account，它为pod李的进程提供必要的身份证明。
 Pod访问`kube-apiserver`时是以service方式访问kubernetes这个service。
-
-
-
-## List-Watch
-
-Etcd 存储集群的数据信息，而 Apiserver 作为统一入口，任何对数据的操作都必须经过 Apiserver。客户端（如kubelet、scheduler、controller-manager）通过 list-watch 监听Apiserver 中的资源（如 pod、rs、rc 等）的 create、update和 delete 事件，并针对事件类型调用相应的事件处理函数。
-
-list-watch 有 list 和 watch 两部分组成。list 就是调用资源的list API 罗列所有资源，它基于 HTTP 短链接实现。watch 则是调用资源的 watch  API 监听资源变更事件，基于 HTTP 长链接实现。以 pod 资源为例，它的 list 和 watch API 分别为：
-
-- List API：返回值为 PodList，即一组 pod
-
-```http
-GET /api/v1/pods
-```
-
-- Watch API：往往带上 watch=true，表示采用 HTTP 长连接持续监听 pod 相关事件。每当有新事件，返回一个 WatchEvent 。
-
-```http
-GET /api/v1/watch/pods
-```
-
-K8s 的 informer 模块封装了 list-watch API，用户只需要指定资源，编写事件处理函数 AddFunc、UpdateFunc 和DeleteFunc 等。如下图所示，informer 首先通过 list API 罗列资源，然后调用 watch  API 监听资源的变更事件，并将结果放入到一个 FIFO 队列，队列的另一头有协程从中取出事件，并调用对应的注册函数处理事件。Informer 还维护了一个只读的 Map Store 缓存，主要为了提升查询的效率，降低 Aiserver 的负载。
-
-![理解K8S的设计精髓之list-watch](figures/f9eab21464ec485aab29fc83bbcddea9.png)
-
-### Watch 的实现
-
-Watch 是如何通过 HTTP 长链接接收 Apiserver 发来的资源变更事件呢？秘诀就是 Chunked Transfer Encoding（分块传输编码），它首次出现在HTTP/1.1 。
-
-当客户端调用 watch API 时，Apiserver 在 response 的 HTTP  Header 中设置 Transfer-Encoding 的值为 chunked，表示采用分块传输编码。客户端收到该信息后，便和服务端该链接，并等待下一个数据块，即资源的事件信息。例如：
-
-```shell
-$ curl -i http://{kube-api-server-ip}:8080/api/v1/watch/pods?watch=yes
-
-HTTP/1.1 200 OK
-Content-Type: application/json
-Transfer-Encoding: chunked
-Date: Thu, 02 Jan 2019 20:22:59 GMT
-Transfer-Encoding: chunked
-
-{"type":"ADDED", "object":{"kind":"Pod","apiVersion":"v1",...}}
-{"type":"ADDED", "object":{"kind":"Pod","apiVersion":"v1",...}}
-{"type":"MODIFIED", "object":{"kind":"Pod","apiVersion":"v1",...}}
-...
-```
-
-List-Watch 基于 HTTP 协议，是 K8s 重要的异步消息通知机制。它通过 list 获取全量数据，通过 watch  API 监听增量数据，保证消息可靠性、实时性、性能和顺序性。而消息的实时性、可靠性和顺序性又是实现声明式设计的良好前提。
 
 ## K8S Proxy API
 

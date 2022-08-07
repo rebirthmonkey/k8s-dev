@@ -17,7 +17,7 @@ func main() {
 		println(err)
 	}
 
-	// create the clientset
+	// clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		println(err)

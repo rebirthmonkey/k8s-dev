@@ -1,5 +1,9 @@
 # kube-controller-manager
 
+## 简介
+
+kube-controller-manager具有高可用，它基于Etcd集群的分布式锁实现leader选举机制。抢先获取锁的实例被称为leader，并运行kube-controller-manager组件的主逻辑。而未获得锁的实例被称为candidate，运行时处于阻塞状态。在leader节点因为某些原因推出后，candidate则通过leader选举参与竞选，称为leader节点后阶梯kube-controller-manager的工作。
+
 - Replication Controller：RC所关联的pod副本数保持预设值，pod的RestartPolicy=Always
 - Node Controller：kubelet通过API server注册自身节点信息
 - ResourceQuota Controller：确保指定资源对象在任何时候都不会超量占用系统物力资源（需要Admission Control配合使用）

@@ -26,7 +26,7 @@ func main() {
 	coreV1 := clientSet.CoreV1()
 	pod, err := coreV1.Pods("default").Get(context.TODO(), "test", v1.GetOptions{})
 	if err != nil {
-		println(err)
+		panic(err)
 	} else {
 		fmt.Println(pod.Status)
 	}

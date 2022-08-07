@@ -17,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	//create client
+	//create clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)

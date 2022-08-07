@@ -8,6 +8,12 @@ kubelet是k8s这样一个容器编排与管理系统跟容器打交道的主要�
 - 通过`API Server`监听所有针对pod的操作，并做相关如创建、删除CT等的操作
 - 通过cAdvisor监控container和node资源，并定期向master汇报资源使用情况
 
+kubelet实现了3中开放接口：
+
+- CRI（Container Runtime Interface）：CRI定义了容器和镜像服务的接口，它将kubelet与容器运行时（如Docker）进行解耦。
+- CNI（Container Network Interface）：CNI定义了k8s网络插件的基础，容器创建时通过CNI配置网络。
+- CSI（Container Storage Interface）：CSI定义了容器存储标准规范，容器创建是通过CSI插件配置存储卷。
+
 ## 工作原理
 
 kubelet就是一个控制循环SyncLoop，而驱动该控制循环运行的事件包括：Pod 更新事件；Pod 生命周期变化；kubelet 本身设置的执行周期；定时的清理事件。kubelet 启动的时候，先要设置 Listers，也就是注册它所关心的各种事件的 Informer。这些 Informer，就是 SyncLoop 需要处理的数据的来源。

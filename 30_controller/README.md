@@ -2,7 +2,7 @@
 
 ## 简介
 
-在k8s中，controller实现了一个控制循环，它通过kube-apiserver观测集群中的共享状态，进行必要的变更，尝试把资源对应的当前状态期望的目标状态。controller可以对k8s的核心资源（如pod、deployment）等进场操作，通常是controller manager的一部分，但它也可以观察并操作用户自定义资源。
+在k8s中，controller实现了一个控制循环，它通过kube-apiserver观测集群中的共享状态，进行必要的变更，尝试把资源对应的当前状态期望的目标状态。controller负责执行例行性任务来保证集群尽可能接近其期望状态。典型情况下控制器读取.spec字段，运行一些逻辑，然后修改 .status 字段。K8S自身提供了大量的控制器，并由控制器管理器统一管理。controller可以对k8s的核心资源（如pod、deployment）等进场操作，通常是controller manager的一部分，但它也可以观察并操作用户自定义资源。
 
 自定义实现一个简单的 controller，其作用是一旦watch到有新的、带有特殊annotation的service资源被添加，则会自动添加ingress资源。
 
