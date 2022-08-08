@@ -129,6 +129,36 @@ Kind是对应了Go结构体名字，可以认为是一种类型。而resource是
 - Verbs：对该resource可操作的方法列表。
 - ShortNames：resource的简称，如pod的简称为po。
 
+### 资源转换
+
+resource 可以有多个版本，为了让一个 resource 的多个版本共存，apiserver 需要把 resource 在多个版本间进行转换。为了避免 NxN 的复杂度，apiserver 采用了 internal 版本作为中枢版本，可以用作每个版本与之互转的中间版本。
+
+<img src="figures/image-20220808091139365.png" alt="image-20220808091139365" style="zoom:50%;" />
+
+#### 操作流程
+
+- 用户发送特定版本请求（如 v1）
+- apiserver 将请求（v1）解码（转换）成 internal 版本
+- apiserver 对 internal 版本的请求进行准入检测和验证
+- 用 internal 版本注册 scheme
+- 将 internal 版本转换成目标版本（如 v2），用于读写入 Etcd
+- 产生最终结果并编码成 v1 返回客户
+
+#### 代码
+
+- 包地址：`pkg/apis/group-name`
+- internal 类型： `pkg/apis/group-name/types.go`，它不需要包含 JSON 和 protobuf 标签
+- external 类型：`pkg/apis/group-name/version/types.go`
+- 类型转换：
+  - 自动由 conversion-gen 生成：`pkg/apis/group-name/zz_generated.conversion.go`
+  - 手动编写：`pkg/apis/group-name/version/conversion.go`
+- 默认值处理：
+  - 自动由 defaulter-gen 生成：`pkg/apis/group-name/zz_generated.defaults.go`
+  - 手动编写：`pkg/apis/group-name/version/defaults.go`
+- 注册 scheme：`pkg/apis/group-name/install/install.go`
+
+
+
 ### 映射关系
 
 <img src="figures/image-20220725092000368.png" alt="image-20220725092000368" style="zoom:50%;" />

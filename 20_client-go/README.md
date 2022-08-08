@@ -113,27 +113,32 @@ List-Watch 基于 HTTP 协议，是 K8s 重要的异步消息通知机制。它�
 
 Delta：resource object 及对其的操作类型（如 Added、Updated、Deleted）。
 
-ObjKey：基于 resource object 计算的资源对象的 UUID。
+ObjKey：基于 resource object，通过 DeltaFIFO.KeyOf() 函数计算资源对象的 UUID
 
 DeltaFIFO 是用于存储 Reflector 获得的待处理 resource object及其操作类型的本地缓存。简单来说，它是一个生产者消费者队列，拥有FIFO的特性，操作的资源对象为 Delta。每一个 Delta 包含一个资源对象和其操作类型。
 
-DeltaFIFO 由一个 FIFO 和 Delta 的 Map 组成。
+DeltaFIFO 由一个 FIFO 和 Delta 的 Map 组成，其中 map 会保存对 resource object 的操作类型。
 
 <img src="figures/image-20220807162248349.png" alt="image-20220807162248349" style="zoom:50%;" />
 
-### Indexer
-
-Indexer 是本地**最全的**数据存储，提供数据存储和数据索引功能。Indexer 与 ETCD 中的数据保持完全一致，这样 client-go 可以很方便的从 Indexer 中读取相应 resource object 数据，而无需从远程的 Etcd 中读取，以减轻 kube-apiser 的压力。
-
-其通过 DeltaFIFO 中最新的Delta不停的更新自身信息，同时需要在本地（DeltaFIFO、Indexer、Listener）之间执行同步，以上两个更新和同步的步骤都由 Reflector 的 ListAndWatch 来触发。同时在本地 crach，需要进行 replace 时，也需要查看到 Indexer 中当前存储的所有key。
+- Add（queueActionLocked）：DeltaFIFO 的生产者是 Reflector。
+- Pop：DeltaFIFO 的消费者是 Processor。
 
 ### Processor
 
-Processor（ResourceEventHandler）消费 DeltaFIFO 中排队的Delta，同时更新给 Indexer，并通过 distribute 方法派发给对应的 Listener（也就是 EventHandler）集合。通过 Informer 的`AddEventHandler` 可以向Informer 注册新的 Listener，这些 Listener 共享同一个Informer。也就是说一个 Informer 可以拥有多个 Listener，是一对多的关系。 当 HandleDeltas 处理 DeltaFIFO 中的 Delta 时，会将这些更新事件派发给注册的 Listener。
+Processor（ResourceEventHandler）消费 DeltaFIFO 中排队的Delta，同时更新给 Indexer，并通过 distribute() 函数将 resource object 分发至 SharedInformer。通过 Informer 的`AddEventHandler` 可以向 Informer 注册新的 Handler。 当 HandleDeltas 处理 DeltaFIFO 中的 Delta 时，会将这些更新事件派发给注册的 Handler。
 
-### workqueue
+### Indexer
 
-回调函数处理得到的obj-key需要放入其中，待worker来消费，支持延迟、限速、去重、并发、标记、通知、有序。shareProcessor 的 Listener通过回调函数接收到对应的event之后，需要将对应的obj-key放入workqueue中，从而方便多个worker去消费。workqueue内部主要有queue、dirty、processing三个结构，其中queue为slice类型保证了有序性，dirty与processing为hashmap，提供去重属性。使用workqueue的优势：
+Indexer 是 client-go 用来存储 resource object 并自带 index 的本地存储，提供数据存储和数据索引功能。DeltaFIFO 通过 Processor 消费出来的 resource object 会存储在 Indexer。 Indexer 与 ETCD 中的数据保持完全一致，这样 client-go 可以很方便的从 Indexer 中读取相应 resource object 数据，而无需从远程的 Etcd 中读取，以减轻 kube-apiserver 的压力。
+
+其通过 DeltaFIFO 中最新的 Delta 不停的更新自身信息，同时需要在本地（DeltaFIFO、Indexer、Listener）之间执行同步，以上两个更新和同步的步骤都由 Reflector 的 ListAndWatch 来触发。同时在本地 crash，需要进行 replace 时，也需要查看到 Indexer 中当前存储的所有key。
+
+ThreadSafeMap 是一个在内存中实现并发安全的 map，在每次增删改查操作时都会加锁，以保证数据的一致性。Indexer 在它之上做了封装，在每次增删改查 ThreadSafeMap 数据时，都会自动更新索引。
+
+### WorkQueue
+
+回调函数处理得到的 ObjKey 需要放入其中，待 worker 来消费，支持延迟、限速、去重、并发、标记、通知、有序。Processor 的 Handler 通过回调函数接收到对应的 event 之后，需要将对应的 ObjKey 放入 WorkQueue 中，从而方便多个 worker 去消费。WorkQueue 内部主要有 queue、dirty、processing 三个结构，其中 queue 为s lice 类型保证了有序性， dirty 与 processing 为 hashmap，提供去重属性。使用workqueue的优势：
 
 - 并发：支持多生产者、多消费者
 - 去重：由dirty保证一段时间内的一个元素只会被处理一次
@@ -143,18 +148,31 @@ Processor（ResourceEventHandler）消费 DeltaFIFO 中排队的Delta，同时�
 - 限速：支持限速队列，对放入的元素进行速率限制
 - 通知：ShutDown告知该workqueue不再接收新的元素
 
+#### 延迟队列
+
+基于 WorkQueue 增加了 AddAfter 方法，用于延迟一段时间后再将元素插入 WorkQueue 队列中。
+
+#### 限速队列
+
+限速队列利用延迟队列的特性，延迟某个元素的插入时间，从而达到限速的目的。它提供 4 种限速接口算法 RateLimiter：
+
+- 令牌桶算法：
+- 排队指数算法：
+- 计数器算法：
+- 混合模式：
+
 ### sharedInformer
 
 对于同一个资源，会存在多个 Listener 去监听它的变化，如果每一个 Listener 都来实例化一个对应的 Informer 实例，那么会存在非常多冗余的 List、watch 操作，导致 kube-apiserver 压力山大。因此一个良好的设计思路为：Singleton 模式，同一类资源Informer 共享一个 Reflector，这就是 K8s 中 SharedInformer 的机制。
 
 ### 自定义代码
 
-Informer可以非常方便的动态获取各种资源的实时变化，开发者只需要在对应的informer上调用`AddEventHandler`，添加相应的逻辑处理`AddFunc`、`DeleteFunc`、`UpdateFun`，就可以处理资源的`Added`、`Deleted`、`Updated`动态变化。这样，整个开发流程就变得非常简单，开发者只需要注重回调的逻辑处理，而不用关心具体事件的生成和派发。
+Informer 可以非常方便的动态获取各种资源的实时变化，开发者只需要在对应的 Informer 上调用`AddEventHandler` 添加相应的逻辑处理`AddFunc`、`DeleteFunc`、`UpdateFun`，就可以处理资源的`Added`、`Deleted`、`Updated`动态变化。这样，整个开发流程就变得非常简单，开发者只需要注重回调的逻辑处理，而不用关心具体事件的生成和派发。
 
 总体来说，需要自定义的代码只有：
 
 1. 调用`AddEventHandler`，添加相应的逻辑处理`AddFunc`、`DeleteFunc`、`UpdateFun`
-2. 实现worker逻辑从workqueue中消费obj-key即可。
+2. 实现 worker 逻辑从 workqueue 中消费 ObjKey 即可。
 
 
 

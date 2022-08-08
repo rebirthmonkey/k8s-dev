@@ -4,10 +4,63 @@
 
 kube-apiserver：
 
-- 将k8s的所有资源对象封装成REST风格的API接口进行管理
-- 将集群的所有数据和状态存户的Etcd中
+- 将 k8s 的所有资源对象封装成 REST 风格的 API 接口进行管理
+- 将集群的所有数据和状态存户的 Etcd 中
 - 提供丰富的安全访问机制，包括认证、授权及准入控制（admission control）
 - 提供了集群各组件间的通讯和交互功能
+
+k8s 基于 go-restful 框架，因为其具有很好的可定制化性。
+
+### 架构
+
+k8s 内包含 3 个独立的 HTTP server，分别是：
+
+- kube-aggregator：以下 3 个 server 的 proxy。而代理 API 请求到 apiextension-server 的过程被称为 API aggregation。
+- apiextension-server：提供了 CRD 的自定义资源服务，并通过apiextensionserver.Scheme 注册管理 CRD 相关资源。
+- kube-apiserver：k8s 内置核心资源服务，并通过 legacyscheme.Scheme 注册管理资源。
+- aa-server（APIAggregator）：通过 AA 对 k8s 进行扩展，并通过 aggregatorscheme.Scheme 注册管理相关资源
+
+其中 apiextensionserver 和 aa-server 都可以在不修改 k8s 核心代码的前提下扩展 k8s 的资源。但这 3 个 server 都是基于 GenericAPIServer实现。
+
+<img src="figures/image-20220807184929435.png" alt="image-20220807184929435" style="zoom:50%;" />
+
+### 启动流程
+
+- 注册资源：将所支持的 resource 注册到 scheme 中。它是通过 pkg 的 init() 来实现的，调用了 k8s 各个资源下的 install 包。
+- Cobra 命令行参数解析：通过 NewServerRunOptions() 初始化 options 结构，通过 Complete() 填充默认参数，通过 Validate() 验证参数的合法性，最后通过 Run() 将参数传入组件启动逻辑。
+- 创建 kube-apiserver 通用配置：
+  - genericConfig：
+  - OpenAPI 配置：
+  - Etcd 配置：
+  - Authentication 配置：
+  - Authorization 配置：
+  - Admission 配置：
+- 创建 apiextension-server：
+  - 创建 genericapiserver：
+- 创建 kube-apiserver：
+  - 创建 genericapiserver：
+  - 实例化 master：
+  - 注册 /api 资源：
+  - 注册 /apis 资源：
+- 创建 aa-server：
+  - 创建 genericapiserver：
+  - 实例化 APIAggregator：
+  - 实例化 APIGroupInfo：
+  - 注册 APIGroup：
+- 创建 genericapiserver：以上 3 种 server 都依赖于 GenericAPIServer，通过它将 k8s 的资源与 REST API 进行映射
+- 启动服务：
+  - 启动 HTTP 服务：
+  - 启动 HTTPS 服务：
+- 权限控制：
+  - AuthN：
+  - AuthZ：
+  - AdmissionControl：拦截 HTTP 请求，进行校验、修改或拒绝等操作。
+
+### 处理流程
+
+- 请求经过处理链处理：复用 kube-apiserver 的处理链，包括身份认证、日志审计、切换用户、限流、授权
+- 拦截请求：由 kube-aggregator 对 `/apis/aggregated-API-group-name` 路径下的请求进行拦截
+- 转发请求：由 kube-aggregator 将拦截的请求转发给 aa-server
 
 ## 处理请求
 
@@ -21,10 +74,6 @@ kube-apiserver：
 
 API server收到一个request后，会根据其中数据创建access policy object，然后将这个object与access policy逐条匹配，如果有至少一条匹配，则鉴权通过。
 
-#### WebHook
-
-k8s调用外部的access control service来进行用户授权。
-
 #### ABAC
 
 通过如subject user、group，resource/object apiGroup、namespace、resource等现有的attribute来鉴权。
@@ -35,6 +84,10 @@ k8s调用外部的access control service来进行用户授权。
 - ClusterRole：整个k8s集群的一组permission/rule的集合
 - RoleBinding：把一个role绑定到一个user/group/serviceAccount，roleBinding也可使用clusterRole，把一个clusterRole运用在一个NS内。
 - ClusterRoleBinding：把一个clusterRole绑定到一个user
+
+#### WebHook
+
+k8s调用外部的access control service来进行用户授权。
 
 ### Admission Control
 
