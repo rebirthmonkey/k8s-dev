@@ -1,4 +1,4 @@
-module scheme
+module concept
 
 go 1.18
 

@@ -291,8 +291,6 @@ make all
 - [scheme 操作](12_scheme/example.go)：首先定义了 2 中类型的 GV，KnownType 类型有 coreGV、extensionGV、coreInternalGV 对象，而 UnversionedType 类型有 Unversioned 对象。
 通过 runtime.NewScheme 实例化一个新的 scheme，通过 AddXXXTypes 方法注册对象。
 
-
-
 ### runtime.object
 
 - [runtime.object 操作](15_runtime-object/example.go)：实例化 pod 资源，再将 pod 资源转换为 runtime.object 资源，在将 runtime.object 资源转换回 pod 资源，最终通过 reflect 来验证转换是否等价。
