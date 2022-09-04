@@ -184,9 +184,9 @@ Processor 中注册的 Handler 通过回调函数接收到对应的 event 之后
 
 ### Informer
 
-- [Informer 不带 WorkQueue](15_informer.go)：首先建立 clientSet 与 kube-apiserver 进行交互。实例化 SharedInformer 对象，并通过此获得 Pod 资源的 Informer 对象。为 Pod Informer 添加 Pod 资源的回调方法 AddFunc、UpdateFunc、DeleteFunc。在正常情况下，回调方法会将 resource object 推送到 WorkQueue 中，但在本示例中，为了简便直接打印。
-
-- [Informer with WorkQueue](18_informer-workqueue.go): 
+- [Informer](21_informer.go)：首先建立 clientSet 与 kube-apiserver 进行交互。实例化 SharedInformer 对象，并通过此获得 Pod 资源的 Informer 对象。为 Pod Informer 添加 Pod 资源的回调方法 AddFunc、UpdateFunc、DeleteFunc。在正常情况下，回调方法会将 resource object 推送到 WorkQueue 中，但在本示例中，为了简便直接打印。
+- [Informer with WorkQueue](26_informer-workqueue.go): 
 
 ### Controller
 
+- [Ingress Manager Controller](30_controller/README.md)

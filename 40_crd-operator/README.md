@@ -96,13 +96,13 @@ Operator 的发布一般包括：
 
 - Create CRD
 ```shell
-kubectl apply -f crd.yaml
+kubectl apply -f 10_crd/crd.yaml
 kubectl get crds
 ```
 
 - Create CR
 ```shell
-kubectl apply -f cr.yaml
+kubectl apply -f 10_crd/cr.yaml
 kubectl get crd1s 
 ```
 
