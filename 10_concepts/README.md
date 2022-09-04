@@ -1,4 +1,4 @@
-# k8s Core Concept
+# Basics
 
 ## 简介
 
@@ -88,7 +88,7 @@ Go 内部的结构体，用于描述后续介绍的 resource 的种类。k8s 中
 
 从 REST 的角度来表示 kind 资源类型
 
-在编码过程中，k8s 的 resource 都是以 Go 的结构体存储的。由于不同版本的 kind 的结构体存在差异，如果只用 kind 则无法获取具体版本的结构体。因此需要 GVK 这 3 个信息才能准确确定一个 kind，并且通过后续介绍的 scheme 获取 GVK 对应的 Go 结构体。
+在编码过程中，k8s 的 resource 都是以 Go 的结构体存储的。由于不同版本的 kind 的结构体存在差异，如果只用 kind 则无法获取具体版本的结构体。因此需要 GVK 这 3 个信息才能准确确定一个 kind，并且通过后续介绍的 scheme 获取 GVK 对应的 Go 结构体。但同一个 kind 结构体可以对应多个不同的 GVK。
 
 #### scheme 注册表
 
@@ -109,6 +109,8 @@ scheme 资源注册表的数据结构主要由 4 个 map 组成：
 
 resource 是 k8s 的核心概念，k8s 整个体系都是围绕着 resource 构建的。k8s 的本质就是对 resource 的控制，包括注册、管理、调度并维护资源的状态。目前 k8s 支持 8 种对 resource 的操作，分别是 create、delete、delectcollection、get、list、patch、update、watch。
 
+resource 以小写复数的形式（如 pods）出现在 HTTP endpoint 中，用于暴露 resource 的 CRUD 操作。
+
 #### Resource Object 资源对象
 
 Resource 被实例化后会表现为一个 resource object 资源对象。
@@ -119,7 +121,7 @@ Resource 被实例化后会表现为一个 resource object 资源对象。
 
 Kind 是对应了 Go 内部结构体，可以认为是一种类型。而 resource 是从外部来看待的 k8s 自身的资源。
 
-
+具体而言，Resource 都会对应一个 HTTP Path，而 Kind 是通过这个 HTTP Path 返回的对象的类型，用于 Go 编程内部或 Etcd 中存储。
 
 
 
@@ -129,7 +131,7 @@ GVR（GroupVersionResource）：资源也有分组和版本号，具体表现形
 
 #### RESTMapping
 
-将 GVK 映射到 GVR 的过程被称为 RESTMapping
+GVK 与 GVR 之间的映射关系被称为 RESTMapping，用于请求一个 GVK 所对应的 GVR。
 
 <img src="figures/image-20220725092000368.png" alt="image-20220725092000368" style="zoom:50%;" />
 
@@ -137,7 +139,7 @@ GVR（GroupVersionResource）：资源也有分组和版本号，具体表现形
 
 resource 可以有多个版本，为了让一个 resource 的多个版本共存，kube-apiserver 需要把 resource 在多个版本间进行转换。为了避免 NxN 的复杂度，kube-apiserver 采用了 internal 版本作为中枢版本，可以用作每个版本与之互转的中间版本。
 
-<img src="figures/image-20220808091139365.png" alt="image-20220808091139365" style="zoom:50%;" />
+![image-20220904135441719](figures/image-20220904135441719.png)
 
 ##### External vs. Internal
 

@@ -29,7 +29,7 @@
 
 ## CRD
 
-- [CRD](40_crd/README.md)
+- [CRD](40_crd-operator/README.md)
 
 ## code-generator
 
@@ -50,7 +50,7 @@
 
 ## aggregate
 
-- [aggregate](80_aggregate-api/README.md)
+- [aggregate](80_aa-server/README.md)
 
 ## Ref
 
