@@ -1,4 +1,4 @@
-module github.com/rebirthmonkey/k8s-dev/30_controller
+module github.com/rebirthmonkey/k8s-dev/20_client-go/30_controller
 
 go 1.18
 

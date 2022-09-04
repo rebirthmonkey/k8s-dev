@@ -2,6 +2,9 @@ package controller
 
 import (
 	"context"
+	"reflect"
+	"time"
+
 	v14 "k8s.io/api/core/v1"
 	v12 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -15,8 +18,6 @@ import (
 	v1 "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"reflect"
-	"time"
 )
 
 const (

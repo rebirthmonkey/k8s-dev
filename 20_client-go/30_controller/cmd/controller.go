@@ -26,16 +26,16 @@ func main() {
 		config = inClusterConfig
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
+	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatalln("can't create client")
 	}
 
-	factory := informers.NewSharedInformerFactory(clientset, 0)
+	factory := informers.NewSharedInformerFactory(clientSet, 0)
 	serviceInformer := factory.Core().V1().Services()
 	ingressInformer := factory.Networking().V1().Ingresses()
 
-	controller := controller.NewController(clientset, serviceInformer, ingressInformer)
+	controller := controller.NewController(clientSet, serviceInformer, ingressInformer)
 	stopCh := make(chan struct{})
 	factory.Start(stopCh)
 	factory.WaitForCacheSync(stopCh)

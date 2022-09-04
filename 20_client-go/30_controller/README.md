@@ -1,4 +1,4 @@
-# Service-Ingress Controller
+# Ingress-Manager Controller
 
 自定义实现一个简单的 controller，其作用是一旦 watch 到有新的、带有特殊 annotation 的 service 资源被添加，则会自动添加 ingress 资源。
 
@@ -6,17 +6,22 @@
 
 - 安装 Nginx Ingress Controller
 
-
 ## 通过 Go 进程运行
 
 - 启动 controller
 ```shell
-go run main.go 
+go run cmd/controller.go
+```
+
+- 验证 ingress 为空
+```shell
+kubectl get ingress # 无ingress 
 ```
 
 - 部署 deployment 和 service
+
 ```shell
-kubectl apply -f deploy-service.yaml 
+kubectl apply -f test/deploy-service.yaml 
 ```
 
 - 验证 ingress 是否自动添加
@@ -51,7 +56,7 @@ kubectl apply -f manifests
 
 - 部署 deployment 和 service
 ```shell
-kubectl apply -f deploy-service.yaml 
+kubectl apply -f test/deploy-service.yaml 
 ```
 
 - 验证 ingress 是否自动生成
