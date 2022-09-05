@@ -29,7 +29,7 @@
 
 ## CRD
 
-- [CRD](40_crd-operator/README.md)
+- [CRD](30_crd-operator/README.md)
 
 ## code-generator
 
