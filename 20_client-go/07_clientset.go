@@ -14,19 +14,19 @@ import (
 func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		println(err)
+		panic(err)
 	}
 
 	// clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		println(err)
+		fmt.Println(err)
 	}
 
 	for {
 		pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
-			println(err)
+			fmt.Println(err)
 		}
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 

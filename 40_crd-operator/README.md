@@ -1,4 +1,4 @@
-# CRD
+# CRD&Operator
 
 ## 简介
 
@@ -81,11 +81,14 @@ spec:
   image: crontab:1.0.0
 ```
 
+### Operator
 
+Operator 首先是一个 controller，通过扩展 k8s API 来创建、配置和管理一个复杂、有状态的应用。它一般基于 k8s 的资源和 controller 相关概念开发，但还包含了很多业务领域或应用相关的逻辑，实现了一些自动化操作代替用户的手工操作。这些自动化运维操作往往是一些最佳实践，例如动态扩容等。
 
-### 架构
+Operator 的发布一般包括：
 
-<img src="figures/image-20220725092436287.png" alt="image-20220725092436287" style="zoom:50%;" />
+- CRD + CR：CRD 用于定义领域相关的 schema，与之对应的 CR 用于描述实例级别的领域相关信息。
+- Controller：用来管理 CR，同时也会涉及到一些核心资源。
 
 ## Lab
 
@@ -93,13 +96,13 @@ spec:
 
 - Create CRD
 ```shell
-kubectl apply -f crd.yaml
+kubectl apply -f 10_crd/crd.yaml
 kubectl get crds
 ```
 
 - Create CR
 ```shell
-kubectl apply -f cr.yaml
+kubectl apply -f 10_crd/cr.yaml
 kubectl get crd1s 
 ```
 

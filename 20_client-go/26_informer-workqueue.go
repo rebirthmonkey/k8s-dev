@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"k8s.io/client-go/util/workqueue"
 
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/workqueue"
 )
 
 func main() {
@@ -21,12 +21,11 @@ func main() {
 	//create client
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	//get informer
 	factory := informers.NewSharedInformerFactory(clientset, 0)
-	//factory := informers.NewSharedInformerFactoryWithOptions(clientset, 0, informers.WithNamespace("default"))
 	informer := factory.Core().V1().Pods().Informer()
 
 	// add workqueue

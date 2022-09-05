@@ -13,20 +13,20 @@ func main() {
 	// config
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		println(err)
+		panic(err)
 	}
 
 	// clientSet
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		println(err)
+		fmt.Println(err)
 	}
 
 	// get data
 	coreV1 := clientSet.CoreV1()
 	pod, err := coreV1.Pods("default").Get(context.TODO(), "test", v1.GetOptions{})
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	} else {
 		fmt.Println(pod.Status)
 	}

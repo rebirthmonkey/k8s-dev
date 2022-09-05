@@ -20,12 +20,11 @@ func main() {
 	//create clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	//get informer
 	factory := informers.NewSharedInformerFactory(clientset, 0)
-	//factory := informers.NewSharedInformerFactoryWithOptions(clientset, 0, informers.WithNamespace("default"))
 	informer := factory.Core().V1().Pods().Informer()
 
 	//add event handler

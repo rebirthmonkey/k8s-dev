@@ -15,7 +15,7 @@ func main() {
 	// config
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		println(err)
+		panic(err)
 	}
 
 	config.APIPath = "/api"
@@ -25,7 +25,7 @@ func main() {
 	// REST client
 	restClient, err := rest.RESTClientFor(config)
 	if err != nil {
-		println(err)
+		fmt.Println(err)
 	}
 
 	// get data
@@ -37,7 +37,7 @@ func main() {
 		Do(context.TODO()).
 		Into(&pod)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	} else {
 		fmt.Println(pod.Status)
 	}
