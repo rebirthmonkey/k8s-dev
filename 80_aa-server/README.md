@@ -26,9 +26,9 @@ aa-server（Aggregator APIServer）的设计思路是允许用户编写一个自
 - 审计：
 - 委托 AuthZ：通过 SubjectAccessReivew 委托 kube-apiserver 进行授权
 
+<img src="figures/image-20220809165522802.png" alt="image-20220809165522802" style="zoom:50%;" />
 
 
-<img src="figures/image-20220808083627693.png" alt="image-20220808083627693" style="zoom:50%;" />
 
 ## Lab
 

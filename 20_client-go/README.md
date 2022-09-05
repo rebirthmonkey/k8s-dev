@@ -4,6 +4,8 @@
 
 ## 客户端
 
+<img src="figures/image-20220809165112920.png" alt="image-20220809165112920" style="zoom:50%;" />
+
 ### kubeconfig
 
 kubeconfig 用于管理访问 kube-apiserver 的配置信息，默认情况下放置在 `$HOME/.kube/config` 路径下，主要包括
@@ -84,7 +86,7 @@ GET /api/v1/watch/pods
 
 K8s 的 informer 模块封装了 list-watch API，用户只需要指定资源，编写事件处理函数 AddFunc、UpdateFunc 和DeleteFunc 等。如下图所示，informer 首先通过 list API 罗列资源，然后调用 watch  API 监听资源的变更事件，并将结果放入到一个 FIFO 队列，队列的另一头有协程从中取出事件，并调用对应的注册函数处理事件。Informer 还维护了一个只读的 Map Store 缓存，主要为了提升查询的效率，降低 kube-apiserver 的负载。
 
-![理解K8S的设计精髓之list-watch](figures/f9eab21464ec485aab29fc83bbcddea9.png)
+<img src="figures/image-20220809165239508.png" alt="image-20220809165239508" style="zoom:50%;" />
 
 ##### Watch实现
 
@@ -119,7 +121,7 @@ DeltaFIFO 是用于存储 Reflector 获得的待处理 resource object及其操�
 
 DeltaFIFO 由一个 FIFO 和 Delta 的 Map 组成，其中 map 会保存对 resource object 的操作类型。
 
-<img src="figures/image-20220807162248349.png" alt="image-20220807162248349" style="zoom:50%;" />
+<img src="figures/image-20220809165341772.png" alt="image-20220809165341772" style="zoom:50%;" />
 
 - Add（queueActionLocked）：DeltaFIFO 的生产者是 Reflector。
 - Pop：DeltaFIFO 的消费者是 Processor。

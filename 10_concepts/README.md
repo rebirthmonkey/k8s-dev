@@ -133,7 +133,7 @@ Kind是对应了Go结构体名字，可以认为是一种类型。而resource是
 
 resource 可以有多个版本，为了让一个 resource 的多个版本共存，apiserver 需要把 resource 在多个版本间进行转换。为了避免 NxN 的复杂度，apiserver 采用了 internal 版本作为中枢版本，可以用作每个版本与之互转的中间版本。
 
-<img src="figures/image-20220808091139365.png" alt="image-20220808091139365" style="zoom:50%;" />
+<img src="figures/image-20220809165632917.png" alt="image-20220809165632917" style="zoom:50%;" />
 
 #### 操作流程
 

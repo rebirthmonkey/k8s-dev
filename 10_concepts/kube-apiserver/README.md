@@ -62,15 +62,13 @@ k8s 内包含 3 个独立的 HTTP server，分别是：
 - 拦截请求：由 kube-aggregator 对 `/apis/aggregated-API-group-name` 路径下的请求进行拦截
 - 转发请求：由 kube-aggregator 将拦截的请求转发给 aa-server
 
-## 处理请求
-
-### Authentication
+## Authentication
 
 - CA证书
 - HTTP Token: 用token来表明user身份，`kube-apiserver`通过私钥来识别用户的合法性
 - HTTP Base：把`UserName:Password`用BASE64编码后放入Authorization Header中发送给`kube-apiserver`
 
-### Authorization
+## Authorization
 
 API server收到一个request后，会根据其中数据创建access policy object，然后将这个object与access policy逐条匹配，如果有至少一条匹配，则鉴权通过。
 
@@ -89,15 +87,34 @@ API server收到一个request后，会根据其中数据创建access policy obje
 
 k8s调用外部的access control service来进行用户授权。
 
-### Admission Control
+## Admission Control
 
-当任何一个API对象被提交给APIServer之后，总有一些“初始化”性质的工作需要在它们被k8s正式处理之前进行。比如，自动为所有Pod加上某些标签（Labels）。而这个“初始化”操作的实现，借助的是Admission Control功能。它其实是k8s里一组被称为Admission Controller的代码，可以选择性地被编译进APIServer中，在API对象创建之后会被立刻调用到。k8s提供了一种“热插拔”式的Admission机制，它就是Dynamic Admission Control，也叫作：Initializer。
+当任何一个API对象被提交给 APIServer 之后，总有一些“初始化”性质的工作需要在它们被 k8s 正式处理之前进行。比如，自动为所有Pod加上某些标签（Label）。而这个“初始化”操作的实现，借助的是 Admission Control 功能。它其实是 k8s 里一组被称为 Admission Controller 的代码，可以选择性地被编译进 APIServer 中，在 API 对象创建之后会被立刻调用到。发送給 `kube-apiserver`的任何一个 request 都需要通过 admission controller 的检查，如果不通过则`kube-apiserver`拒绝此调用请求。
 
- Initializer也是一个controller，实时查看用户给APIServer的请求，遇到实际状态与期望值不同时，更新用户API对象。更新用户的API对象的时候，使用PATCH API来完成merge工作。而这种PATCH API，正是声明式API最主要的能力。Initializer会再创建一个新的对象，然后通过TwoWayMergePatch和PATCH API把两个API对象merge，完成类似注入的操作。
+### Web Hook
 
-发送个`kube-apiserver`的任何一个request都需要通过买个admission controller的检查，如果不通过则`kube-apiserver`拒绝此调用请求。
+在 kube-apiserver 中包含两个特殊的准入控制器：Mutating 和 
+Validating。这两个控制器将发送准入请求到外部的 HTTP 回调服务并接收一个准入响应。如果启用了这两个准入控制器，k8s 管理员可以在集群中创建和配置一个 admission webhook。
 
-An admission controller is a piece of code that intercepts requests to the Kubernetes API server prior to persistence of the object, but after the request is authenticated and authorized. 
+<img src="figures/image-20220809141558400.png" alt="image-20220809141558400" style="zoom:50%;" />
+
+总的来说，步骤如下：
+
+- 检查集群中是否启用了 admission webhook 控制器，并根据需要进行配置。
+- 编写处理准入请求的 HTTP 回调服务：回调可以是一个部署在集群中的简单 HTTP 服务，甚至也可以是一个外部 HTTP 服务
+- 通过 MutatingWebhookConfiguration 和 ValidatingWebhookConfiguration 资源配置 admission webhook。
+
+这两种类型的 admission webhook 之间的区别是非常明显的：validating webhooks  可以拒绝请求，但是它们却不能修改在准入请求中获取的对象，而 mutating webhooks  可以在返回准入响应之前通过创建补丁来修改对象，如果 webhook 拒绝了一个请求，则会向最终用户返回错误。
+
+
+
+### Initializer
+
+k8s 提供了一种“热插拔”式的 Admission 机制，它就是 Dynamic Admission Control，也叫作：Initializer。Initializer 也是一个controller，实时查看用户给 APIServer 的请求，遇到实际状态与期望值不同时，更新用户 API 对象。更新用户的 API 对象时，使用 PATCH API 来完成 merge 工作。而这种 PATCH API，正是声明式API最主要的能力。Initializer会 再创建一个新的对象，然后通过 TwoWayMergePatch 和 PATCH API 把两个 API 对象merge，完成类似注入的操作。
+
+
+
+
 
 #### 类型
 
@@ -135,3 +152,8 @@ kube-apiserver把收到的REST request转发到某个node的kubelet的REST端口
 - `curl 127.0.0.1:8080/api`
 - `curl 127.0.0.1:8080/api/v1`
 - `curl 127.0.0.1:8080/api/v1/pods`
+
+## Ref
+
+1. [深入理解 Kubernetes Admission Webhook](https://www.toutiao.com/article/6712393368413929995)
+2. 
