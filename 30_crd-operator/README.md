@@ -138,6 +138,14 @@ kubectl apply -f 10_crd/cr.yaml
 kubectl get crd1s 
 ```
 
+### code-generator
+
+- [code-generator](30_code-generator/README.md)
+
+### sample controller
+
+- [sample controller](50_app/README.md)
+
 ## Ref
 
 1. [kubebuilder Book](https://book.kubebuilder.io/introduction.html)

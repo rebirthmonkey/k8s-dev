@@ -18,9 +18,9 @@ go mod vendor
 
 - 替换代码中的类型等参数
 
-- 生成 artifacts
+- 生成 manifests
 ```shell
-controller-gen crd paths=./... output:crd:dir=artifacts 
+controller-gen crd paths=./... output:crd:dir=manifests 
 ```
 
 - 生成 CRD 及 CR 资源

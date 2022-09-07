@@ -1,0 +1,7 @@
+apiVersion: "wukong.com/v1"
+kind: Foo
+metadata:
+  name: foo
+spec:
+  deploymentName: foo1
+  replicas: 1
