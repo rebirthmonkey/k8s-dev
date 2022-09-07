@@ -1,4 +1,7 @@
-# CRD Lab
+# App Lab
+
+本例子来源于 [k8s sample controller 例子](https://github.com/kubernetes/sample-controller)。
+
 - 更新 go mod
 
 ```shell

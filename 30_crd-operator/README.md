@@ -144,7 +144,7 @@ kubectl get crd1s
 
 ### sample controller
 
-- [sample controller](50_app/README.md)
+- [sample controller](50_app-xx/README.md)
 
 ## Ref
 
