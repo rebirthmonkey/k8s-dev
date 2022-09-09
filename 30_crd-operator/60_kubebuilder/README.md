@@ -66,20 +66,26 @@ Reconciler 通常仅处理一种类型的对象，OwnerReference 用于从子对
 
 需要根据 CRD 建立自己的 CR。
 
-
 ## Lab
+
+### Install
+
+```shell
+curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/darwin/amd64
+chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
+```
 
 ### kubebuilder-demo
 
+- 默认需求：go 1.8，kubebuilder 3.6.0
 - 初始化 kubebuilder
+
 ```shell
 mkdir kubebuilder-demo & cd kubebuilder-demo
-kubebuilder init --domain wukong.com --repo github.com/rebirthmonkey/kubebuilder-demo
-go get sigs.k8s.io/controller-runtime@v0.10.0
-go mod tidy
+kubebuilder init \
+	--domain wukong.com \
+	--repo github.com/rebirthmonkey/k8s-dev/kubebuilder-demo
 ```
-
-
 
 - 创建 API
 
@@ -90,6 +96,7 @@ kubebuilder create api --group ingress --version v1 --kind App
 - install CRD
 ```shell
 make install
+kubectl get crds
 ```
 
 - 在 controller/Reconcile() 中添加代码
@@ -106,64 +113,62 @@ make run
 
 - 添加 CR：此处 CR 未填入具体内容，因为只是为了测试 Reconsile() log 是否输出。
 ```shell
-kubectl delete -f config/samples/ingress_v1beta1_app.yaml 
+kubectl apply -f config/samples/ingress_v1_app.yaml
+kubectl delete -f config/samples/ingress_v1_app.yaml 
 ```
 
 
 ### kubebuilder-at
 
-启动一个 称为 AT 的 CR，在 AT 中 schedule 配置的 UTC 时间、执行在 CR 中 command 配置的命令。
+启动一个 称为 AT 的 CR，在 AT 中 schedule 配置的 UTC 时间、执行在 CR 中 command 配置的命令。整个执行过程（CR 的 status）分为 3 个阶段：pending、running、done。
 
-整个执行过程（CR 的 status）分为 3 个阶段：pending、running、done。
+- 创建脚手架
 
-#### 创建脚手架
 ```shell
-$ mkdir kubebuilder-at && cd $_
-
-$ kubebuilder init \
-              --domain wukong.com \
-              --repo github.com/rebirthmonkey/k8s-dev/kubebuilder-at
+mkdir kubebuilder-at && cd kubebuilder-at
+kubebuilder init \
+	--domain wukong.com \
+  --repo github.com/rebirthmonkey/k8s-dev/kubebuilder-at
 ```
 
-#### 创建 API/controller
+- 创建 API/controller
+
 ```shell
-$ kubebuilder create api \
-              --group cnat \
-              --version v1alpha1 \
+kubebuilder create api \
+              --group at \
+              --version v1 \
               --kind At
-Create Resource under pkg/apis [y/n]?
-y
-Create Controller under pkg/controller [y/n]?
-y
-...
 ```
 
-#### 创建/安装 CRD
+- 创建/安装 CRD
+
 ```shell
 make install
 ```
 
-#### 运行 Operator
+- 运行 Operator
+
 ```shell
 make run
 ```
 
-#### 添加 CR Yaml
+- 添加 CR Yaml
 
 ```shell
-kubectl apply -f config/samples/cnat_v1alpha1_at.yaml
+kubectl apply -f config/samples/at_v1_at.yaml
 kubectl delete -f config/samples/cnat_v1alpha1_at.yaml
+make uninstall
 ```
 
-#### 修改 api/v1alpha1/at_types.go
+#### 开发步骤
 
-修改了 const、AtSpec 和 AtStatus 三处
+- 修改 api/v1alpha1/at_types.go：修改了 const、AtSpec 和 AtStatus 三处
 
 ```go
 const (
-PhasePending = "PENDING"
-PhaseRunning = "RUNNING"
-PhaseDone    = "DONE"
+  PhasePending = "PENDING"
+  PhaseRunning = "RUNNING"
+  PhaseDone    = "DONE"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -174,35 +179,37 @@ type AtSpec struct {
 // INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 // Important: Run "make" to regenerate code after modifying this file
 
-Schedule string `json:"schedule,omitempty"`
-// Command is the desired command (executed in a Bash shell) to be executed.
-Command string `json:"command,omitempty"`
+  Schedule string `json:"schedule,omitempty"`
+  // Command is the desired command (executed in a Bash shell) to be executed.
+  Command string `json:"command,omitempty"`
 }
 
 // AtStatus defines the observed state of At
 type AtStatus struct {
-// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-// Important: Run "make" to regenerate code after modifying this file
-Phase string `json:"phase,omitempty"`
+  // INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+  // Important: Run "make" to regenerate code after modifying this file
+  Phase string `json:"phase,omitempty"`
 }
 ```
+
+- 更新修改
 
 ```shell
 make
 ```
 
-#### 修改 controllers/at_controllers.go
-详细代码见 [at_controllers.go](30_kubebuilder-at/at_controller.go)
+- 修改 controllers/at_controllers.go：详细代码见 [at_controllers.go](kubebuilder-at/controllers/at_controller.go)
 
-#### 启动 operator
+- 启动 operator
+
 ```shell
 make run
 ```
 
-#### 创建 CR
-CR 内容改为
+- 创建 CR：内容改为
+
 ```yaml
-apiVersion: cnat.wukong.com/v1alpha1
+apiVersion: at.wukong.com/v1
 kind: At
 metadata:
   name: at-sample
@@ -212,6 +219,6 @@ spec:
 ```
 
 ```shell
-kubectl apply -f config/samples/cnat_v1alpha1_at.yaml
+kubectl apply -f config/samples/at_v1_at.yaml
 ```
 
