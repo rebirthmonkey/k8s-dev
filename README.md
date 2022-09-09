@@ -23,30 +23,10 @@
 
 - [client-go](20_client-go/README.md)
 
-## lab-controller
+## CRD Operator
 
-- [lab-controller](30_controller/README.md)
+- [CRD Operator](30_crd-operator/README.md)
 
-## CRD
-
-- [CRD](30_crd-operator/README.md)
-
-## code-generator
-
-- [code-generator](45_code-generator/README.md)
-
-## controller-tools
-
-- [controller-tools](48_controller-tools/README.md)
-
-
-## lab-crd-app
-
-- [lab-crd-app](55_lab-crd-app/README.md)
-
-## kubebuilder
-
-- [kubebuilder](70_kubebuilder/README.md)
 
 ## aggregate
 

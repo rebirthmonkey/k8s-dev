@@ -4,8 +4,6 @@
 
 ### Manager
 
-
-
 <img src="figures/image-20220608172034690.png" alt="image-20220608172034690" style="zoom:50%;" />
 
 ### Controller
@@ -75,15 +73,21 @@ Reconciler 通常仅处理一种类型的对象，OwnerReference 用于从子对
 
 - 初始化 kubebuilder
 ```shell
+mkdir kubebuilder-demo & cd kubebuilder-demo
 kubebuilder init --domain wukong.com --repo github.com/rebirthmonkey/kubebuilder-demo
+go get sigs.k8s.io/controller-runtime@v0.10.0
+go mod tidy
 ```
 
+
+
 - 创建 API
+
 ```shell
 kubebuilder create api --group ingress --version v1 --kind App
 ```
 
-- install CRDS
+- install CRD
 ```shell
 make install
 ```
