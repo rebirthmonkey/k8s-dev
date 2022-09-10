@@ -161,6 +161,8 @@ external 和 internal version 的相互转换的函数需要事先初始化到 s
 
 #### 数据结构
 
+类型通常放在 pkg/apis/group/version 包中一个名为 types.go 的文件中，具体内容如下：
+
 - TypeMeta：
   - apiVersion：
   - kind：
@@ -168,7 +170,9 @@ external 和 internal version 的相互转换的函数需要事先初始化到 s
   - UID：
   - Name：
   - Namespace：
+  - ResourceVersion：
   - Labels：
+  - Annotations：
 - Spec：用户期望的状态
 - Status：当前的状态
 

@@ -1,5 +1,7 @@
 # kubebuilder
 
+kubebuilder 为 Operator 搭建好了基本的代码框架，生成了一堆文件，涵盖了自定义 controller 的代码和一个示例 CRD。
+
 ## 架构
 
 ### Manager
@@ -87,13 +89,13 @@ kubebuilder init \
 	--repo github.com/rebirthmonkey/k8s-dev/kubebuilder-demo
 ```
 
-- 创建 API
+- 创建 API：创建对应的 controller
 
 ```shell
 kubebuilder create api --group ingress --version v1 --kind App
 ```
 
-- install CRD
+- 部署 CRD
 ```shell
 make install
 kubectl get crds
@@ -106,21 +108,28 @@ kubectl get crds
 	return ctrl.Result{}, nil
 ```
 
-- run operator
+- 运行 operator
 ```shell
 make run  
 ```
 
-- 添加 CR：此处 CR 未填入具体内容，因为只是为了测试 Reconsile() log 是否输出。
+- 部署 CR：此处 CR 未填入具体内容，因为只是为了测试 Reconsile() log 是否输出。
 ```shell
 kubectl apply -f config/samples/ingress_v1_app.yaml
 kubectl delete -f config/samples/ingress_v1_app.yaml 
 ```
 
+- 容器镜像打包
+
+```shell
+export IMG=docker.io/xxx/yyy:v1
+make docker-build
+make docker-push
+```
 
 ### kubebuilder-at
 
-启动一个 称为 AT 的 CR，在 AT 中 schedule 配置的 UTC 时间、执行在 CR 中 command 配置的命令。整个执行过程（CR 的 status）分为 3 个阶段：pending、running、done。
+At 是个工具，用于在指定时间运行指定的命令，通过它的 schedule 和 command 2 个属性来设置。启动一个 称为 AT 的 CR，在 AT 中 schedule 配置的 UTC 时间、执行在 CR 中 command 配置的命令。整个执行过程（CR 的 status）分为 3 个阶段：pending、running、done。
 
 - 创建脚手架
 
@@ -158,6 +167,14 @@ make run
 kubectl apply -f config/samples/at_v1_at.yaml
 kubectl delete -f config/samples/cnat_v1alpha1_at.yaml
 make uninstall
+```
+
+- 容器镜像打包
+
+```shell
+export IMG=docker.io/xxx/yyy:v1
+make docker-build
+make docker-push
 ```
 
 #### 开发步骤

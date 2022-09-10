@@ -28,6 +28,8 @@ ClientSet 在 RESTClient 的基础上封装了对 Resource 和 Version 的管理
 
 DynamicClient 与 ClientSet 最大的区别在于它能够处理 k8s 中的所有 resource，包括 CRD。DynamicClient 的处理过程将 Resource 转换成 unstructure 结构，再进行处理。处理完后，再将 unstructure 转换成 k8s 的结构体，整个过程类似于 Go 的 interface{} 断言转换过程。
 
+DynamicClient 的输入和输出都是 `*unstructred.Unstructured` 对象，它的数据结构与 json.Unmarshall 的反序列化后的输出一样。
+
 ### DiscoveryClient
 
 DiscoveryClient 用于发现 kube-apiserver 所支持的 group、version 和 resource。`kubectl api-versions` 与 `kubectl api-resources` 命令通过 DiscoveryClient 实现，但它也是基于 RESTClient 的基础上封装的。

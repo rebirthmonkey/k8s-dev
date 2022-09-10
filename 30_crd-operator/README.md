@@ -1,6 +1,6 @@
 # CRD&Operator
 
-## 简介
+## CRD
 
 “资源”对应着 k8s API中的一个端点（Endpoint），它存储了某种类型的 API 对象。在 k8s 中使用的 Deployment、DamenSet、StatefulSet、Service、Ingress、ConfigMap、Secret 这些都是资源。而对这些资源的创建、更新、删除的动作都会被称为为事件（Event），k8s 的 Controller Manager 负责事件监听，并触发相应的动作来满足期望（Spec）。这种方式也就是声明式，即用户只需要关心应用程序的最终状态。当在使用中发现现有的这些资源不能满足需求时，k8s 提供了自定义资源 CR（Custom Resource）和 controller 为应用程序提供基于 k8s 扩展。CR 与其他 k8s 的核心资源放在同一个 Etcd 中，并且由同一个 k8s-apiserver 提供服务。
 
@@ -8,9 +8,24 @@
 
 ### CRD
 
-CRD（Custom Resource Definition）是一种 API 资源，利用它你可以定义 CR，k8s 负责 CRD 的存储。使用 CRD 而非 aa-server 可以免去编写次级 API Server 的烦恼，但是其灵活性不如 aa-server。CRD 从 1.7 版本开始引入，到 1.8 版本进入 Beta 版。CRD/CR 仅仅是一段声明信息，必须配合相应的 controller 才有价值。
+CRD（Custom Resource Definition）是一种 API 资源，利用它可以定义 CR，k8s 负责 CRD 的存储。使用 CRD 而非 aa-server 可以免去编写次级 API Server 的烦恼，但是其灵活性不如 aa-server。
 
-CRD 是对自定义资源的描述，也就是介绍这个资源有什么属性呀，这些属性的类型是什么，结构是怎样的这类。例如 postgres-operator 的 CRD：
+CRD 是对自定义资源的描述，也就是介绍这个资源有什么属性呀，这些属性的类型是什么，结构是怎样的这类。在没有对应 controller 的情况下，它仅仅用于少量配置信息的保存，与 k8s 原生的资源放在同一个 Etcd 中。CRD/CR 仅仅是一段声明信息，如果需要发挥更大作用，必须配合相应的 controller 才有价值。
+
+下面的 CRD 例子可以看到它主要包括 apiVersion、kind、metadata 和 spec 四个部分，其中最关键的是 apiVersion 和 kind。apiVersion 表示资源所属组织和版本，apiVersion 一般由 APIGourp 和 Version 组成，这里 APIGourp 是 [http://apiextensions.k8s.io](https://link.zhihu.com/?target=http%3A//apiextensions.k8s.io)，Version 是v1beta1，相关信息可以通过 kubectl api-resoures 查看。kind 表示资源类型，这里是 CustomResourceDefinition，表示是一个自定义的资源描述。
+
+- 查看所有资源：包括内建及自定义
+
+```shell
+kubectl api-resources 
+```
+
+Properties
+
+- metadata.name：该资源的 ID
+- spec.name：只是一个名为 name 的属性
+
+例如 postgres-operator 的 CRD：
 
 ```yaml
 apiVersion: apiextensions.k8s.io/v1beta1
@@ -49,19 +64,7 @@ spec:
 ...
 ```
 
-上面的 CRD 可以看到它主要包括 apiVersion、kind、metadata 和 spec 四个部分，其中最关键的是 apiVersion 和 kind。apiVersion 表示资源所属组织和版本，apiVersion 一般由 APIGourp 和 Version 组成，这里 APIGourp 是 [http://apiextensions.k8s.io](https://link.zhihu.com/?target=http%3A//apiextensions.k8s.io)，Version 是v1beta1，相关信息可以通过 kubectl api-resoures 查看。kind 表示资源类型，这里是 CustomResourceDefinition，表示是一个自定义的资源描述。
-
-- 查看所有资源：包括内建及自定义
-```shell
-kubectl api-resources 
-```
-
-Properties
-
-- metadata.name：该资源的 ID
-- spec.name：只是一个名为 name 的属性
-
-#### CR
+### CR
 
 一旦 CRD 创建成功，就可以创建对应类型的 CR（Custom Resource）了。自定义资源可以包含任意的自定义字段，例如：
 
@@ -81,7 +84,36 @@ spec:
   image: crontab:1.0.0
 ```
 
-### Operator
+### apisextensions-apiserver
+
+创建 CRD 对象后，kube-apiserver 的 apiextensions-apiserver 会检查其名字，确认是否与其他资源的名字发生冲突以及它内部的定义是否一致。
+
+<img src="figures/image-20220910121231143.png" alt="image-20220910121231143" style="zoom:50%;" />
+
+### 子资源
+
+子资源是特殊的 HTTP endpoint，通过在普通资源的 HTTP 路径后加上后缀得到，如在 Pod 的 /api/v1/namespaces/namespace/pods/name 后加上 /logs、/portforward、/exec、/status 等。当前 k8s 的 CR 支持 2 种子资源：/scale 和 /status。
+
+#### /status
+
+/status 子资源用于吧用户的 CR 实例的展示和管控分离，实现权限隔离：
+
+- 用户不需要更新状态字段
+- controller 不需要更新资源规格字段
+
+/status 将资源与展示分开，提供了不同的 endpoint，每个 endpoint 由独立的 RBAC 规则来管理。
+
+#### /scale
+
+/scale 用于查看和修改资源中制定的副本数，用于类似 Deployment 或 ReplicSet 这样的具有副本数的资源，通过 /scale 可以进行资源的扩容和缩容。它往往结合 kubectl 的 scale 命令配合使用，如
+
+```shell
+kubectl scale --replicas=3 atxxx -v=7
+```
+
+
+
+## Operator
 
 Operator 是一种 K8s 的扩展形式，利用 CR 来管理应用和组件，允许用户以 K8s 的声明式 API 风格来管理应用及服务，支持 kubectl 命令行。同时 Operator 开发者可以像使用原生 API 进行应用管理一样，通过声明式的方式定义一组业务应用的期望终态，并且根据业务应用的自身特点进行相应控制器逻辑编写，以此完成对应用运行时刻生命周期的管理并持续维护与期望终态的一致性。这样的设计范式使得应用部署者只需要专注于配置自身应用的期望状态，而无需再投入大量的精力在手工部署或是业务在运行时刻的繁琐运维操作中。
 
@@ -98,7 +130,7 @@ Operator 的发布一般包括：
 - CRD + CR：CRD 用于定义领域相关的 schema，与之对应的 CR 用于描述实例级别的领域相关信息。
 - Controller：用来管理 CR，同时也会涉及到一些核心资源。
 
-#### 历史
+### 历史
 
 CoreOS 在 2016 年底提出了 Operator 的概念，当时的一段官方定义如下：“An Operator represents human operational knowledge in software, to reliably manage an application.”
 
@@ -110,7 +142,7 @@ CoreOS 是最早的一批基于 k8s 提供企业级容器服务解决方案的�
 
 然而，巨大的压力并没有让 Operator 昙花一现，就此消失。相反，社区大量的 Operator 开发和使用者仍旧拥护着 Operator 清晰自由的设计理念，继续维护演进着自己的应用项目。同时很多云服务提供商也并没有放弃 Operator，Operator  简洁的部署方式和易复制，自由开放的代码实现方式使其维护住了大量忠实粉丝。在用户的选择面前，强如谷歌、红帽这样的巨头也不得不做出退让。最终，TPR 并没有被彻底废弃，而是由 CRD（Custom Resource Definition）资源模型范式代替。2018 年初，RedHat 完成了对 CoreOS 的收购，并在几个月后发布了 Operator Framework，通过提供 SDK 等管理工具的方式进一步降低了应用开发与 K8s 底层 API 知识体系之间的依赖。至此，Operator 进一步巩固了其在 K8s 应用开发领域的重要地位。【1】
 
-#### 生命周期
+### 生命周期
 
 - 开发者使用 Operator SDK 创建一个 Operator 项目；
 - SDK 生成 Operator 对应的脚手架代码，然后扩展相应业务模型和 API，实现业务逻辑完成 Operator 的代码编写；
@@ -142,9 +174,9 @@ kubectl get crd1s
 
 - [code-generator](30_code-generator/README.md)
 
-### sample controller
+### 基于sample controller的App
 
-- [sample controller](50_app-xx/README.md)
+- [基于 sample controller 的 App](50_app/README.md)
 
 ## Ref
 
