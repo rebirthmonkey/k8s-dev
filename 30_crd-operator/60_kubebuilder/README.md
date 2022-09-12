@@ -2,42 +2,28 @@
 
 kubebuilder 为 Operator 搭建好了基本的代码框架，生成了一堆文件，涵盖了自定义 controller 的代码和一个示例 CRD。
 
-## 架构
-
-### Manager
-
-<img src="figures/image-20220608172034690.png" alt="image-20220608172034690" style="zoom:50%;" />
-
-### Controller
-
-
-
-### Webhook
-
-
-
-### Cluster
-
-#### Client
-
-
-
-#### Cache
-
-
-
 ## controller-runtime
 
 该项目包含若干 Go 库，用于快速构建 controller。kubebuilder 依赖于此项目，使用 controller-runtime 的 Client 接口来实现针对 k8s 资源的 CRUD 操作。
 
-- Manager：用于启动（Manager.Start） controller，管理被多个 controller 共享的依赖，例如 Cache、Client、Scheme。通过 manager.Manager 来创建 client.Client，SDK 生成的代码中包含创建 Manager 的逻辑，Manager 持有一个 Cache 和一个 Client。
-- Cache：为读客户端提供本地缓存，支持监听更新缓存的事件。
-  - DelegatingClient：从 Cache 中读取（Get/List），写入（Create/Update/Delete）请求则直接发送给 API Server。使用 Cache 可以大大减轻 API Server 的压力，随着缓存的更新，读操作会达成最终一致。
-- Client：实现针对 kube-apiserver 的 CRUD 操作，读写客户端通常是分离（split）的。
+### Manager
+
+controller-runtime 由 Manager 串联起来，用于启动（Manager.Start） controller，管理被多个 controller 共享的依赖，例如 Cache、Client、Scheme。通过 manager.Manager 来创建 client.Client，SDK 生成的代码中包含创建 Manager 的逻辑，Manager 持有一个 Cache 和一个 Client。
+
+<img src="figures/image-20220608172034690.png" alt="image-20220608172034690" style="zoom:50%;" />
+
+#### 启动流程
+
+- 创建 Manager：
+  - 创建并注册 scheme
+  - 创建 cluster（client+cache）
+  - 为 runnable 创建 map
+- 注册 Runnable：添加 runnable 到 map
+- 启动 Manager：启动所有注册的 runnable（map）
 
 ### Controller
 
-controller 持有一个 Reconciler，此外它从 Manager 得到各种共享对象，它自己创建一个工作队列。Controller 可能会监控多种类型的对象（如 Pod + ReplicaSet + Deployment），但是 Controller 的 Reconciler 一般仅仅处理单一类型的对象。
+Controller 可能会监控多种类型的对象（如 Pod + ReplicaSet + Deployment），但是 Controller 的 Reconciler 一般仅仅处理单一类型的对象。controller 从 Manager 得到各种共享对象，它自己创建一个工作队列。并从工作队列中获取 event，转给 Reconciler。
 
 当 A 类型的对象发生变化后，如果 B 类型的对象必须更新以响应，可以使用 EnqueueRequestFromMapFunc 来将一种类型的事件映射为另一种类型。如 Deployment 的 Controller 可以使用 EnqueueRequestForObject、EnqueueRequestForOwner 实现：
 
@@ -53,6 +39,24 @@ reconcile.Request 入队时会自动去重，也就是说一个 ReplicaSet 创�
 Reconciler 是 Controller 的核心逻辑所在，它负责调和使 status  逼近期望状态 spec。例如，当针对 ReplicaSet 对象调用 Reconciler 时，发现 ReplicaSet 要求 5 实例，但是当前系统中只有 3 个 Pod。这时 Reconciler 应该创建额外的两个 Pod，并且将这些 Pod 的 OwnerReference 指向前面的 ReplicaSet。
 
 Reconciler 通常仅处理一种类型的对象，OwnerReference 用于从子对象（如 Pod）触发父对象的调和（如 ReplicaSet）操作。
+
+### Cluster
+
+#### Client
+
+Client 是对 client-go 中 clientSet 的封装，用于实现针对 kube-apiserver 的 CRUD 操作，读写客户端通常是分离（split）的。
+
+#### Cache
+
+Cache 实际是 client-go 中 Informer 的包装，为读客户端提供本地缓存，支持监听更新缓存的事件。
+
+- DelegatingClient：从 Cache 中读取（Get/List），写入（Create/Update/Delete）请求则直接发送给 API Server。使用 Cache 可以大大减轻 API Server 的压力，随着缓存的更新，读操作会达成最终一致。
+
+### Webhook
+
+
+
+
 
 ## 开发步骤
 

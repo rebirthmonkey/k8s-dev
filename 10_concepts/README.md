@@ -206,7 +206,13 @@ external 和 internal version 的相互转换的函数需要事先初始化到 s
 
 ### apimachinery
 
-`k8s.io/apimachinery` 包含了用于实现类似 k8s API 的通用代码，它并不仅限于容器管理，还可以用于任何业务领域的 API 接口开发。它包含了很多通用的 API 类型，如ObjectMeta、TypeMeta、GetOptions、ListOptions 等。
+`k8s.io/apimachinery` 用于存放 k8s 服务端和客户端公用的库，包含了用于实现类似 k8s API 的通用代码，它并不仅限于容器管理，还可以用于任何业务领域的 API 接口开发。它包含了：
+
+- ObjectMeta、TypeMeta、GetOptions、ListOptions 等
+- Scheme
+- RESTMapper
+- 编码解码
+- 版本转换
 
 #### runtime.Object
 
@@ -220,6 +226,16 @@ runtime.Object 是 k8s 的通用资源类型，k8s 上的所有 resource object 
 Serializer 包含序列化和反序列化操作。序列化将数据结构转换为字符串，而反序列化将字符串转换为数据结构，这样可以轻松地维护并存储、传输数据结构。Codec 包含编码器和解码器，它比 serializer 更为通用，指将一种数据结构转换为特定的格式的过程。所以，可以将 serializer 理解为一种特殊的 codec。
 
 k8s 的 codec 包含 3 种 serializer：jsonSerializer、yamlSerializer、protobufSerializer。
+
+#### Scheme
+
+GVK <--> Type
+
+
+
+#### RESTMapper
+
+GVR <--> GVK
 
 
 
@@ -262,31 +278,6 @@ make all
 
 
 #### Bazel环境构建
-
-
-
-## 代码生成器
-
-- 全局 Tag：定义在每个包的 doc.go 文件中，对整个包中的类型自动生成代码。
-- 局部 Tag：定义在 Go 的类型声明上方，只对该类型自动生成代码。
-
-### conversion-gen
-
-
-
-### deepcopy-gen
-
-
-
-### defaulter-gen
-
-
-
-### go-bindata
-
-
-
-### openapi-gen
 
 
 
