@@ -39,7 +39,7 @@ spec:
 - 启动程序
 
 ```shell
-go run ./cmd/app.go --kubeconfig=$HOME/.kube/config 
+go run ./cmd/app-controller.go --kubeconfig=$HOME/.kube/config 
 ```
 
 - 在 k8s 中生成 CRD 及 CR 资源
