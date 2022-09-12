@@ -1,9 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
-	"github.com/rebirthmonkey/k8s-dev/20_client-go/30_controller/pkg/controller"
+	"github.com/rebirthmonkey/k8s-dev/app/pkg/controller"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -16,6 +17,8 @@ func main() {
 	//3. informer
 	//4. add event handler
 	//5. informer.Start
+
+	fmt.Println("k8s app is starting!")
 
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {

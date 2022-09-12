@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -85,6 +86,7 @@ func (c *controller) deleteIngress(obj interface{}) {
 		return
 	}
 
+	fmt.Println("k8s app: delete ingress", ingress.Name)
 	c.workQueue.Add(ingress.Namespace + "/" + ingress.Name)
 }
 
@@ -139,6 +141,7 @@ func (c *controller) syncService(key string) error {
 
 	if ok && errors.IsNotFound(err) {
 		//create ingress
+		fmt.Println("k8s app: create ingress", name)
 		ig := c.newIngress(service)
 		_, err := c.client.NetworkingV1().Ingresses(namespaceKey).Create(context.TODO(), ig, metav1.CreateOptions{})
 		if err != nil {

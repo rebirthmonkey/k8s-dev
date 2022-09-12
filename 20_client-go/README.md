@@ -189,4 +189,4 @@ Processor 中注册的 Handler 通过回调函数接收到对应的 event 之后
 
 ### Controller
 
-- [Ingress Manager Controller](30_controller/README.md)
+- [Ingress Manager Controller](80_app/README.md)
