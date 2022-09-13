@@ -19,6 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1alpha1 "10_sample-apiserver/pkg/apis/wardle/v1alpha1"
+	scheme "10_sample-apiserver/pkg/generated/clientset/versioned/scheme"
 	"context"
 	"time"
 
@@ -26,8 +28,6 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
-	v1alpha1 "k8s.io/sample-apiserver/pkg/apis/wardle/v1alpha1"
-	scheme "k8s.io/sample-apiserver/pkg/generated/clientset/versioned/scheme"
 )
 
 // FlundersGetter has a method to return a FlunderInterface.

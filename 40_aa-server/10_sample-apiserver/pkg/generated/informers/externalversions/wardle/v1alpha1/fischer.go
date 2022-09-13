@@ -19,6 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	wardlev1alpha1 "10_sample-apiserver/pkg/apis/wardle/v1alpha1"
+	versioned "10_sample-apiserver/pkg/generated/clientset/versioned"
+	internalinterfaces "10_sample-apiserver/pkg/generated/informers/externalversions/internalinterfaces"
+	v1alpha1 "10_sample-apiserver/pkg/generated/listers/wardle/v1alpha1"
 	"context"
 	time "time"
 
@@ -26,10 +30,6 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	wardlev1alpha1 "k8s.io/sample-apiserver/pkg/apis/wardle/v1alpha1"
-	versioned "k8s.io/sample-apiserver/pkg/generated/clientset/versioned"
-	internalinterfaces "k8s.io/sample-apiserver/pkg/generated/informers/externalversions/internalinterfaces"
-	v1alpha1 "k8s.io/sample-apiserver/pkg/generated/listers/wardle/v1alpha1"
 )
 
 // FischerInformer provides access to a shared informer and lister for

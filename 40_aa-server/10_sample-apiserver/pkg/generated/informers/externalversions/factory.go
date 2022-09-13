@@ -19,6 +19,9 @@ limitations under the License.
 package externalversions
 
 import (
+	versioned "10_sample-apiserver/pkg/generated/clientset/versioned"
+	internalinterfaces "10_sample-apiserver/pkg/generated/informers/externalversions/internalinterfaces"
+	wardle "10_sample-apiserver/pkg/generated/informers/externalversions/wardle"
 	reflect "reflect"
 	sync "sync"
 	time "time"
@@ -27,9 +30,6 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	versioned "k8s.io/sample-apiserver/pkg/generated/clientset/versioned"
-	internalinterfaces "k8s.io/sample-apiserver/pkg/generated/informers/externalversions/internalinterfaces"
-	wardle "k8s.io/sample-apiserver/pkg/generated/informers/externalversions/wardle"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.

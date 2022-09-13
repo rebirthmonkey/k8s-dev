@@ -19,16 +19,17 @@ limitations under the License.
 package fake
 
 import (
+	clientset "10_sample-apiserver/pkg/generated/clientset/versioned"
+	wardlev1alpha1 "10_sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1alpha1"
+	fakewardlev1alpha1 "10_sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1alpha1/fake"
+	wardlev1beta1 "10_sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1beta1"
+	fakewardlev1beta1 "10_sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1beta1/fake"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
-	clientset "k8s.io/sample-apiserver/pkg/generated/clientset/versioned"
-	wardlev1alpha1 "k8s.io/sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1alpha1"
-	fakewardlev1alpha1 "k8s.io/sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1alpha1/fake"
-	wardlev1beta1 "k8s.io/sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1beta1"
-	fakewardlev1beta1 "k8s.io/sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1beta1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.

@@ -19,14 +19,14 @@ limitations under the License.
 package versioned
 
 import (
+	wardlev1alpha1 "10_sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1alpha1"
+	wardlev1beta1 "10_sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1beta1"
 	"fmt"
 	"net/http"
 
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
-	wardlev1alpha1 "k8s.io/sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1alpha1"
-	wardlev1beta1 "k8s.io/sample-apiserver/pkg/generated/clientset/versioned/typed/wardle/v1beta1"
 )
 
 type Interface interface {

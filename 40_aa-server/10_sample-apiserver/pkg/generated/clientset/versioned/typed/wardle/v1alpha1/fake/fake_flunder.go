@@ -19,6 +19,7 @@ limitations under the License.
 package fake
 
 import (
+	v1alpha1 "10_sample-apiserver/pkg/apis/wardle/v1alpha1"
 	"context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +28,6 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
-	v1alpha1 "k8s.io/sample-apiserver/pkg/apis/wardle/v1alpha1"
 )
 
 // FakeFlunders implements FlunderInterface

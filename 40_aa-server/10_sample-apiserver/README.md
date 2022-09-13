@@ -1,6 +1,6 @@
-# sample-apiserver
+# 10_10_sample-apiserver
 
-k8s 提供了 [kubernetes/sample-apiserver](https://github.com/kubernetes/sample-apiserver) release-1.25 这个示例，但是这个例子依赖于主 kube-apiserver。即使不使用 authn/authz 或 kube-aggregator，也是如此。需要通过 --kubeconfig 来指向一个主 kube-apiserver，示例中的 SharedInformer 依赖于会连接到主 kube-apiserver 来访问 k8s 资源。
+k8s 提供了 [kubernetes/10_10_sample-apiserver](https://github.com/kubernetes/10_10_sample-apiserver) release-1.25 这个示例，但是这个例子依赖于主 kube-apiserver。即使不使用 authn/authz 或 kube-aggregator，也是如此。需要通过 --kubeconfig 来指向一个主 kube-apiserver，示例中的 SharedInformer 依赖于会连接到主 kube-apiserver 来访问 k8s 资源。
 
 ## 准备 kube-apiserver
 
@@ -27,7 +27,7 @@ openssl pkcs12 -export -in ./client.crt -inkey ./client.key -out client.p12 # �
 ### 构建/启动 aa-server
 
 ```shell
-cd 10_sample-apiserver
+cd 10_10_sample-apiserver
 go mod tidy
 go mod vendor
 hack/update-codegen.sh

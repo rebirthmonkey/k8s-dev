@@ -19,11 +19,11 @@ limitations under the License.
 package v1beta1
 
 import (
+	v1beta1 "10_sample-apiserver/pkg/apis/wardle/v1beta1"
+	"10_sample-apiserver/pkg/generated/clientset/versioned/scheme"
 	"net/http"
 
 	rest "k8s.io/client-go/rest"
-	v1beta1 "k8s.io/sample-apiserver/pkg/apis/wardle/v1beta1"
-	"k8s.io/sample-apiserver/pkg/generated/clientset/versioned/scheme"
 )
 
 type WardleV1beta1Interface interface {

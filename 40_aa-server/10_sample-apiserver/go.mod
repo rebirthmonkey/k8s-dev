@@ -1,6 +1,6 @@
 // This is a generated file. Do not edit directly.
 
-module k8s.io/sample-apiserver
+module 10_sample-apiserver
 
 go 1.18
 
@@ -12,7 +12,6 @@ require (
 	k8s.io/client-go v0.0.0-20220909111216-1904631ef0be
 	k8s.io/code-generator v0.0.0-20220909103155-7e9837e6180a
 	k8s.io/component-base v0.0.0-20220909112026-91e1a995ab0d
-	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
 )
 
@@ -95,6 +94,7 @@ require (
 	k8s.io/api v0.0.0-20220909104543-fce3016c0f35 // indirect
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 // indirect
 	k8s.io/klog/v2 v2.70.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.32 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect

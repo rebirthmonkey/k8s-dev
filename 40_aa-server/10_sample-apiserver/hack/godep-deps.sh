@@ -33,10 +33,10 @@ echo ${goPath}
 
 export GOPATH=${goPath}
 
-mkdir -p ${goPath}/src/k8s.io/sample-apiserver
-cp -R . ${goPath}/src/k8s.io/sample-apiserver
+mkdir -p ${goPath}/src/10_sample-apiserver
+cp -R . ${goPath}/src/10_sample-apiserver
 
-pushd ${goPath}/src/k8s.io/sample-apiserver
+pushd ${goPath}/src/10_sample-apiserver
 rm -rf vendor || true
 
 # restore what we have in our new manifest that we've sync
@@ -57,8 +57,8 @@ rm -rf vendor || true
 rm -rf Godeps || true
 git rm -rf vendor || true
 git rm -rf Godeps || true
-mv ${goPath}/src/k8s.io/sample-apiserver/vendor .
-mv ${goPath}/src/k8s.io/sample-apiserver/Godeps .
+mv ${goPath}/src/10_sample-apiserver/vendor .
+mv ${goPath}/src/10_sample-apiserver/Godeps .
 git add vendor
 git add Godeps
 git commit -m "sync: resync vendor folder"
