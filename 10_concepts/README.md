@@ -111,19 +111,15 @@ resource 是 k8s 的核心概念，k8s 整个体系都是围绕着 resource 构�
 
 resource 以小写复数的形式（如 pods）出现在 HTTP endpoint 中，用于暴露 resource 的 CRUD 操作。
 
-#### Resource Object 资源对象
+#### Resource Object
 
 Resource 被实例化后会表现为一个 resource object 资源对象。
-
-
 
 #### Resource/Resource Object/Kind
 
 Kind 是对应了 Go 内部结构体，可以认为是一种类型。而 resource 是从外部来看待的 k8s 自身的资源。
 
 具体而言，Resource 都会对应一个 HTTP Path，而 Kind 是通过这个 HTTP Path 返回的对象的类型，用于 Go 编程内部或 Etcd 中存储。
-
-
 
 #### GVR
 
@@ -135,11 +131,11 @@ GVK 与 GVR 之间的映射关系被称为 RESTMapping，用于请求一个 GVK 
 
 <img src="figures/image-20220725092000368.png" alt="image-20220725092000368" style="zoom:50%;" />
 
-#### resource 版本转换
+#### 版本转换
 
 resource 可以有多个版本，为了让一个 resource 的多个版本共存，kube-apiserver 需要把 resource 在多个版本间进行转换。为了避免 NxN 的复杂度，kube-apiserver 采用了 internal 版本作为中枢版本，可以用作每个版本与之互转的中间版本。
 
-![image-20220904135441719](figures/image-20220904135441719.png)
+<img src="figures/image-20220904135441719.png" alt="image-20220904135441719" style="zoom:50%;" />
 
 ##### External vs. Internal
 
@@ -148,7 +144,7 @@ resource 可以有多个版本，为了让一个 resource 的多个版本共存�
 - External：对外暴露给用户所使用的 resource，其代码在`pkg/apis/group/version/`目录下。外部版本的资源是需要对外暴露给用户请求的接口，所以资源代码定义了 JSON、Proto 等 Tag，用于请求的序列化及反序列化。
 - Internal：不对外暴露，仅在 kube-apiserver 内部使用。Internal 常用于资源版本的转换（不同的 external 资源版本通过 internal 进行中转），如将 v1beta1 转换为 v1 的路径为 v1beta1 --> internal --> v1。其代码在 `pkg/apis/group/__internal/`目录下。内部版本的资源部对外暴露，所以没有任何 JSON、Proto Tag。
 
-##### 操作流程
+##### 转换流程
 
 external 和 internal version 的相互转换的函数需要事先初始化到 scheme 中。
 
@@ -159,50 +155,45 @@ external 和 internal version 的相互转换的函数需要事先初始化到 s
 - 将 internal 版本转换成目标版本（如 v2），用于读写入 Etcd
 - 产生最终结果并编码成 v1 返回客户
 
-#### 数据结构
+在外部版与 internal 版的每个连接处，都会发生一次版本转换，而且所有的转换都是双向的。版本转换往往同时伴随着默认值处理，它是填充未设定值的字段的过程。
 
-类型通常放在 pkg/apis/group/version 包中一个名为 types.go 的文件中，具体内容如下：
-
-- TypeMeta：
-  - apiVersion：
-  - kind：
-- ObjectMeta：对应 YAML 中的 metadata 项
-  - UID：
-  - Name：
-  - Namespace：
-  - ResourceVersion：
-  - Labels：
-  - Annotations：
-- Spec：用户期望的状态
-- Status：当前的状态
-
-？？？
-
-- Name：
-- SingularName：resource的单数名称。
-- Namespaced：是否有所属的namespace。
-- Group：resource所在的group。
-- Version：resource所在的version。
-- Kind：resource的kind。
-- Verbs：对该resource可操作的方法列表。
-- ShortNames：resource的简称，如pod的简称为po。
+<img src="figures/image-20220913084442581.png" alt="image-20220913084442581" style="zoom:50%;" />
 
 #### 代码
 
-- 包地址：`pkg/apis/group-name`
-- internal 类型： `pkg/apis/group-name/types.go`，它不需要包含 JSON 和 protobuf 标签
-- external 类型：`pkg/apis/group-name/version/types.go`
-- 类型转换：
-  - 自动由 conversion-gen 生成：`pkg/apis/group-name/zz_generated.conversion.go`
+- 包地址：`pkg/apis/group-name`、
+- resource 定义：
+  - internal： `pkg/apis/group-name/types.go`，它不需要包含 JSON 和 protobuf 标签
+  - external：`pkg/apis/group-name/version/types.go`
+- 类型转换：通过 Scheme 的 Convert() 函数来调用。
+  - 由 conversion-gen 自动生成：`pkg/apis/group-name/zz_generated.conversion.go`
   - 手动编写：`pkg/apis/group-name/version/conversion.go`
-- 默认值处理：
-  - 自动由 defaulter-gen 生成：`pkg/apis/group-name/zz_generated.defaults.go`
+- 默认值处理：尤其在新版本添加额外字段时，需要自动为其填写默认值。
+  - 由 defaulter-gen 自动生成：`pkg/apis/group-name/zz_generated.defaults.go`
   - 手动编写：`pkg/apis/group-name/version/defaults.go`
 - 注册 scheme：`pkg/apis/group-name/install/install.go`
 
+#### types.go
 
+资源定义通常放在 pkg/apis/group/version 中一个名为 types.go 的文件中，具体内容如下：
 
-
+- TypeMeta：
+  - apiVersion：
+    - Group：resource 所在的 group。
+    - Version：resource 所在的 version。
+  - kind：resource 的 kind。
+- ObjectMeta：对应 YAML 中的 metadata 项
+  - UID：
+  - Name：
+  - Namespaced：是否有所属的 namespace。
+  - ResourceVersion：
+  - Labels：
+  - Annotations：
+  - SingularName：resource的单数名称。
+  - Verbs：对该resource可操作的方法列表。
+  - ShortNames：resource的简称，如pod的简称为po。
+- Spec：用户期望的状态
+- Status：当前的状态
 
 ### apimachinery
 
@@ -245,7 +236,34 @@ GVR <--> GVK
 
 
 
-### Option设置
+### Option&Config
+
+`k8s.io/apiserver`库使用 option&config 模式来创建一个可运行的 apiserver，对 Config、Option、Server 等对象都做了一层包装，不需要关注这些 wrapper。Option 不会存储 Runtime 的数据结构，它通常只在启动时使用，然后就换转换成 Config，再由 Config 转换成 Runtime 用于在运行时使用。
+
+#### Option
+
+- RecommendedOptions：对应了用户提供的各类选项（外加所谓推荐选项，降低使用时的复杂度），如 Etcd 地址、Etcd 存储前缀、apiserver 的基本信息等。
+  - Validate()：校验。
+  - Complete()：自动设置默认值。
+  - Config()：转换成 Config。
+- CustomServerOptions：嵌入了 RecommendedOptions，并添加了一些额外的信息。
+
+#### Config
+
+- RecommandedConfig：由 RecommendedOptions 得到的。
+  - NewRecommendedConfig()：创建一个新的。
+  - Options.ApplyTo()：根据 Option 填充 Config 的完整的配置信息。在这个方法中，甚至会进行自签名证书等重操作，而不是简单的将信息从 Option 复制给 Config。RecommendedOptions 会依次调用它的各个字段的 ApplyTo 方法，从而推导出RecommendedConfig的各个字段。
+- CompletedConfig：由 RecommendedConfig 的 Complete()方法生成的，再一次进行配置信息的推导，主要牵涉到 OpenAPI 相关的配置。
+  - New()：把一份完整的 Config 变成一个 Runtime server。
+- ExtraConfig：添加了额外的配置信息。
+
+#### Server
+
+- genericApiserver：apierver 的核心类型是 genericapiserver，它是由 CompletedConfig 的 New() 方法生成的。CompletedConfig 的 New 方法实例化 GenericAPIServer，这一步最关键的逻辑是安装 API 组。API 组定义了如何实现GroupVersion 中 API 的增删改查，它将 GroupVersion 的每种资源映射到 registry.REST，后者具有处理 REST 风格请求的能力，并（默认）存储到 Etcd。
+  - PrepareRun()：安装一些 API。GenericApiserver 提供了一些钩子来处理 Admission 控制器的注册、初始化。以及另外一些钩子来对 apiserver 的生命周期事件做出响应。
+  - Run()：启动 server。
+
+#### 具体流程
 
 - New Options：创建options
 - Add Flags：将命令行flag添加到options结构体中
@@ -255,7 +273,7 @@ GVR <--> GVK
 
 <img src="figures/image-20220804190826143.png" alt="image-20220804190826143" style="zoom:50%;" />
 
-#### kube-apiserver Option示例
+#### kube-apiserver 示例
 
 <img src="figures/image-20220804190837112.png" alt="image-20220804190837112" style="zoom:50%;" />
 

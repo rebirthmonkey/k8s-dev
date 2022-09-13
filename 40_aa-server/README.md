@@ -19,7 +19,7 @@ aa-server（aggregated-apiserver）的设计思路是允许用户编写一个自
 
 ### 整体架构
 
-kube-aggregator 在 kube-apiserver 中用于用于代理、转发 aa-server 请求。它知道 自定义的 aa-server 以及它提供的 API 资源，以便正确地转发请求到对应的 aa-server 上。其处理流程包括：
+aa-server 与 kube-apiserver 都是基于 `k8s.io/apiserver` 这个库来实现的。但最大的区别在于 aa-server 会在一个 k8s 集群内运行，有一个可用的 kube-apiserver 来代理或获取其他 k8s 资源。kube-aggregator 在 kube-apiserver 中用于用于代理、转发 aa-server 请求。它知道 自定义的 aa-server 以及它提供的 API 资源，以便正确地转发请求到对应的 aa-server 上。其处理流程包括：
 
 - kube-apiserver 收到请求
 - kube-apiserver 的 handling filter 进行处理，包括身份认证、日志审计、用户切换、限流和授权
@@ -56,14 +56,6 @@ aa-server 通过 SubjectAccessReview 代理给 kube-apiserver。而 kube-apiserv
 ### sample-apisrver
 
 K8s 提供的 [kubernetes/sample-apiserver](https://github.com/kubernetes/sample-apiserver)，但是这个例子依赖于主 kube-apiserver。即使不使用 authn/authz 或 API聚合，也是如此。需要通过 --kubeconfig 来指向一个主 kube-apiserver，样例中的 SharedInformer 依赖于会连接到主 kube-apiserver 来访问 k8s 资源。
-
-#### 代码分析
-
-通过对 sample-apiserver 的代码分析，APIServer 的核心类型是 GenericAPIServer，它是由 genericapiserver.CompletedConfig 的 New() 方法生成的。后者则是 genericapiserver.RecommendedConfig 的 Complete()方法生成的。而 RecommendedConfig 又是从 enericoptions.RecommendedOptions 得到的。sample-apiserver 对 Config、Option、Server 等对象都做了一层包装，不需要关注这些 wrapper。
-
-RecommendedOptions 对应了用户提供的各类选项（外加所谓推荐选项，降低使用时的复杂度），如 Etcd 地址、Etcd 存储前缀、APIServer 的基本信息等。调用 RecommendedOptions 的 ApplyTo 方法，会根据选项，推导出 APIServer 所需的，完整的配置信息。在这个方法中，甚至会进行自签名证书等重操作，而不是简单的将信息从 Option 复制给 Config。RecommendedOptions 会依次调用它的各个字段的 ApplyTo 方法，从而推导出RecommendedConfig的各个字段。RecommendedConfig 的 Complete 方法，再一次进行配置信息的推导，主要牵涉到 OpenAPI 相关的配置。CompletedConfig 的 New 方法实例化 GenericAPIServer，这一步最关键的逻辑是安装 API 组。API 组定义了如何实现GroupVersion 中 API 的增删改查，它将 GroupVersion 的每种资源映射到 registry.REST，后者具有处理 REST 风格请求的能力，并（默认）存储到 Etcd。
-
-GenericAPIServer 提供了一些钩子来处理 Admission 控制器的注册、初始化。以及另外一些钩子来对 API Server 的生命周期事件做出响应。
 
 #### 准备 kube-apiserver
 
