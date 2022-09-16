@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM fedora
-ADD kube-sample-apiserver /
-ENTRYPOINT ["/kube-sample-apiserver"]
+FROM golang:1.18 as build
+WORKDIR /sample-apiserver
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build main.go
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+COPY --from=build /sample-apiserver /
+ENTRYPOINT ["/main"]

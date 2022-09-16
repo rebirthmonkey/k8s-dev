@@ -18,10 +18,7 @@ spec:
       serviceAccountName: apiserver
       containers:
       - name: wardle-server
-        # build from staging/src/10_sample-apiserver/artifacts/simple-image/Dockerfile
-        # or
-        # docker pull registry.k8s.io/e2e-test-images/10_sample-apiserver:1.17.4
-        # docker tag registry.k8s.io/e2e-test-images/10_sample-apiserver:1.17.4 kube-10_10_sample-apiserver:latest
+        # build from 10_sample-apiserver/Dockerfile
         image: kube-sample-apiserver:latest
         imagePullPolicy: Never
         args: [ "--etcd-servers=http://localhost:2379" ]

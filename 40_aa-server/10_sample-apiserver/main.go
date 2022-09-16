@@ -19,9 +19,10 @@ package main
 import (
 	"os"
 
-	"10_sample-apiserver/pkg/cmd/server"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/cli"
+
+	"10_sample-apiserver/pkg/cmd/server"
 )
 
 func main() {
