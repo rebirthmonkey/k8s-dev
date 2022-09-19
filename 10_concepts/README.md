@@ -144,6 +144,121 @@ resource 可以有多个版本，为了让一个 resource 的多个版本共存�
 - External：对外暴露给用户所使用的 resource，其代码在`pkg/apis/group/version/`目录下。外部版本的资源是需要对外暴露给用户请求的接口，所以资源代码定义了 JSON、Proto 等 Tag，用于请求的序列化及反序列化。
 - Internal：不对外暴露，仅在 kube-apiserver 内部使用。Internal 常用于资源版本的转换（不同的 external 资源版本通过 internal 进行中转），如将 v1beta1 转换为 v1 的路径为 v1beta1 --> internal --> v1。其代码在 `pkg/apis/group/__internal/`目录下。内部版本的资源部对外暴露，所以没有任何 JSON、Proto Tag。
 
+##### 文件布局
+
+```shell
+api
+├── doc.go
+├── fullvpcmigration_types.go
+├── 
+├── v1
+│   ├── conversion.go
+│   ├── doc.go
+│   ├── fullvpcmigration_types.go
+│   ├── register.go
+│   ├── zz_generated.conversion.go
+│   ├── zz_generated.deepcopy.go
+│   └── zz_generated.openapi.go
+├── v2
+│   ├── doc.go
+│   ├── fullvpcmigration_types.go
+│   ├── register.go
+│   ├── zz_generated.conversion.go
+│   ├── zz_generated.deepcopy.go
+│   └── zz_generated.openapi.go
+└── zz_generated.deepcopy.go
+```
+
+- doc.go：提供包级别的注释
+
+```go
+// +k8s:openapi-gen=true
+// +groupName=gmem.cc
+// +kubebuilder:object:generate=true
+ 
+package api
+```
+
+- register.go：用于Scheme的注册
+
+```go
+// __internal 版本
+package api
+ 
+import (
+    "k8s.io/apimachinery/pkg/runtime"
+    "k8s.io/apimachinery/pkg/runtime/schema"
+)
+ 
+const (
+    GroupName = "gmem.cc"
+)
+ 
+var (
+    // GroupVersion is group version used to register these objects
+    GroupVersion = schema.GroupVersion{Group: GroupName, Version: runtime.APIVersionInternal}
+ 
+    // SchemeBuilder is used to add go types to the GroupVersionKind scheme
+    // no &scheme.Builder{} here, otherwise vk __internal/WatchEvent will double registered to k8s.io/apimachinery/pkg/apis/meta/v1.WatchEvent &
+    // k8s.io/apimachinery/pkg/apis/meta/v1.InternalEvent, which is illegal
+    SchemeBuilder = runtime.NewSchemeBuilder()
+ 
+    // AddToScheme adds the types in this group-version to the given scheme.
+    AddToScheme = SchemeBuilder.AddToScheme
+)
+ 
+// Kind takes an unqualified kind and returns a Group qualified GroupKind
+func Kind(kind string) schema.GroupKind {
+    return GroupVersion.WithKind(kind).GroupKind()
+}
+ 
+// Resource takes an unqualified resource and returns a Group qualified GroupResource
+func Resource(resource string) schema.GroupResource {
+    return GroupVersion.WithResource(resource).GroupResource()
+}
+```
+
+```go
+// v2 版本
+package v2
+ 
+import (
+    "cloud.tencent.com/teleport/api"
+    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+    "k8s.io/apimachinery/pkg/runtime"
+    "k8s.io/apimachinery/pkg/runtime/schema"
+)
+ 
+var (
+    // GroupVersion is group version used to register these objects
+    GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v2"}
+ 
+    // SchemeBuilder is used to add go types to the GroupVersionKind scheme
+    SchemeBuilder = runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
+        metav1.AddToGroupVersion(scheme, GroupVersion)
+        return nil
+    })
+    localSchemeBuilder = &SchemeBuilder
+ 
+    // AddToScheme adds the types in this group-version to the given scheme.
+    AddToScheme = SchemeBuilder.AddToScheme
+)
+ 
+// Kind takes an unqualified kind and returns a Group qualified GroupKind
+func Kind(kind string) schema.GroupKind {
+    return GroupVersion.WithKind(kind).GroupKind()
+}
+ 
+// Resource takes an unqualified resource and returns a Group qualified GroupResource
+func Resource(resource string) schema.GroupResource {
+    return GroupVersion.WithResource(resource).GroupResource()
+}
+```
+
+- zz_generated.openapi.go：这是每个普通版本都需要生成的 OpenAPI 定义。这些 OpenAPI 定义必须注册到 API Server，否则将会导致 kubectl apply 等命令报404错误。
+
+- zz_generated.deepcopy.go：这个文件是__internal版本、普通版本中的资源对应Go结构都需要生成的深拷贝函数。
+
 ##### 转换流程
 
 external 和 internal version 的相互转换的函数需要事先初始化到 scheme 中。

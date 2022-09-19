@@ -30,7 +30,7 @@
 
 ## aggregate
 
-- [aggregate](40_aa-server/README.md)
+- [aggregate](40_aaserver/README.md)
 
 ## Ref
 
