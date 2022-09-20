@@ -165,5 +165,4 @@ kubectl delete -f artifacts/flunders/flunder.yaml
 kubectl delete -f artifacts/example
 ```
 
-### 
 

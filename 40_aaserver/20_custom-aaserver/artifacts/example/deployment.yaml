@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aaserver
+  namespace: restaurant
+  labels:
+    apiserver: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      apiserver: "true"
+  template:
+    metadata:
+      labels:
+        apiserver: "true"
+    spec:
+      serviceAccountName: aaserver
+      containers:
+      - name: main-aaserver
+        # build from 20_custom-aaserver/Dockerfile
+        image: wukongsun/custom-aaserver:0.1
+        imagePullPolicy: Never
+        args: [ "--etcd-servers=http://localhost:2379" ]
+        env:
+          - name: GODEBUG
+            value: x509sha1=1
+      - name: etcd
+        image: gcr.io/etcd-development/etcd:v3.5.4

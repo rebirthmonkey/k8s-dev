@@ -156,7 +156,7 @@ func (o *WardleServerOptions) Config() (*apiserver.Config, error) {
 	return config, nil
 }
 
-// RunWardleServer starts a new WardleServer given WardleServerOptions
+// RunWardleServer starts a new CustomServer given WardleServerOptions
 func (o WardleServerOptions) RunWardleServer(stopCh <-chan struct{}) error {
 	config, err := o.Config()
 	if err != nil {
