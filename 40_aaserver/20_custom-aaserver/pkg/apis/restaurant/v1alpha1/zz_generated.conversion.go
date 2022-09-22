@@ -183,25 +183,6 @@ func Convert_restaurant_PizzaList_To_v1alpha1_PizzaList(in *restaurant.PizzaList
 	return autoConvert_restaurant_PizzaList_To_v1alpha1_PizzaList(in, out, s)
 }
 
-func autoConvert_v1alpha1_PizzaSpec_To_restaurant_PizzaSpec(in *PizzaSpec, out *restaurant.PizzaSpec, s conversion.Scope) error {
-	// INFO: in.Toppings opted out of conversion generation
-	return nil
-}
-
-func autoConvert_restaurant_PizzaSpec_To_v1alpha1_PizzaSpec(in *restaurant.PizzaSpec, out *PizzaSpec, s conversion.Scope) error {
-	if in.Toppings != nil {
-		in, out := &in.Toppings, &out.Toppings
-		*out = make([]string, len(*in))
-		for i := range *in {
-			// FIXME: Provide conversion function to convert restaurant.PizzaTopping to string
-			compileErrorOnMissingConversion()
-		}
-	} else {
-		out.Toppings = nil
-	}
-	return nil
-}
-
 func autoConvert_v1alpha1_PizzaStatus_To_restaurant_PizzaStatus(in *PizzaStatus, out *restaurant.PizzaStatus, s conversion.Scope) error {
 	out.Cost = in.Cost
 	return nil

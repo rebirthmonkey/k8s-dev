@@ -16,8 +16,12 @@ limitations under the License.
 
 package v1beta1
 
-func init() {
-	localSchemeBuilder.Register(RegisterDefaults)
+import (
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
+func addDefaultingFuncs(scheme *runtime.Scheme) error {
+	return RegisterDefaults(scheme)
 }
 
 func SetDefaults_PizzaSpec(obj *PizzaSpec) {

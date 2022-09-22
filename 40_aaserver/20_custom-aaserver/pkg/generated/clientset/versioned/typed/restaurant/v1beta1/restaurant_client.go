@@ -29,6 +29,7 @@ import (
 type RestaurantV1beta1Interface interface {
 	RESTClient() rest.Interface
 	PizzasGetter
+	ToppingsGetter
 }
 
 // RestaurantV1beta1Client is used to interact with features provided by the restaurant.wukong.com group.
@@ -38,6 +39,10 @@ type RestaurantV1beta1Client struct {
 
 func (c *RestaurantV1beta1Client) Pizzas(namespace string) PizzaInterface {
 	return newPizzas(c, namespace)
+}
+
+func (c *RestaurantV1beta1Client) Toppings() ToppingInterface {
+	return newToppings(c)
 }
 
 // NewForConfig creates a new RestaurantV1beta1Client for the given config.

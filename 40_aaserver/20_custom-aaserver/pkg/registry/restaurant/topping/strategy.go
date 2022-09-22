@@ -80,6 +80,10 @@ func (toppingStrategy) Validate(ctx context.Context, obj runtime.Object) field.E
 	return field.ErrorList{}
 }
 
+func (toppingStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
+	return nil
+}
+
 func (toppingStrategy) AllowCreateOnUpdate() bool {
 	return false
 }
@@ -93,4 +97,8 @@ func (toppingStrategy) Canonicalize(obj runtime.Object) {
 
 func (toppingStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
 	return field.ErrorList{}
+}
+
+func (toppingStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
+	return nil
 }

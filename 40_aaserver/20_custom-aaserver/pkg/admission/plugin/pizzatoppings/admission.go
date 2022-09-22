@@ -17,6 +17,7 @@ limitations under the License.
 package pizzatoppings
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -44,10 +45,9 @@ type PizzaToppingsPlugin struct {
 var _ = custominitializer.WantsRestaurantInformerFactory(&PizzaToppingsPlugin{})
 var _ = admission.ValidationInterface(&PizzaToppingsPlugin{})
 
-// Admit ensures that the object in-flight is of kind Pizza.
+// Validate ensures that the object in-flight is of kind Pizza.
 // In addition checks that the toppings are known.
-func (d *PizzaToppingsPlugin) Validate(a admission.Attributes, _ admission.ObjectInterfaces) error {
-	// we are only interested in pizzas
+func (d *PizzaToppingsPlugin) Validate(ctx context.Context, a admission.Attributes, _ admission.ObjectInterfaces) error {
 	if a.GetKind().GroupKind() != restaurant.Kind("Pizza") {
 		return nil
 	}
@@ -58,6 +58,7 @@ func (d *PizzaToppingsPlugin) Validate(a admission.Attributes, _ admission.Objec
 
 	obj := a.GetObject()
 	pizza := obj.(*restaurant.Pizza)
+
 	for _, top := range pizza.Spec.Toppings {
 		if _, err := d.toppingLister.Get(top.Name); err != nil && errors.IsNotFound(err) {
 			return admission.NewForbidden(
@@ -77,7 +78,7 @@ func (d *PizzaToppingsPlugin) SetRestaurantInformerFactory(f informers.SharedInf
 	d.SetReadyFunc(f.Restaurant().V1alpha1().Toppings().Informer().HasSynced)
 }
 
-// ValidaValidateInitializationte checks whether the plugin was correctly initialized.
+// ValidateInitialization checks whether the plugin was correctly initialized
 func (d *PizzaToppingsPlugin) ValidateInitialization() error {
 	if d.toppingLister == nil {
 		return fmt.Errorf("missing policy lister")

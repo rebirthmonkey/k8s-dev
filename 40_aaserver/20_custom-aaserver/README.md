@@ -8,7 +8,7 @@
 
 由 cmd 封装了一层 aaserver，它主要包括 apiserver（apis、registry）和 admission 2 部分。
 
-- Options：Options 的核心是genericoptions.RecommendedOptions，它用于提供运行apiserver 所需的“推荐”选项。推荐的选项取值可以由函数genericoptions.NewRecommendedOptions() 提供，也可以通过命令行参数获取选项取值。
+- Options：Options 的核心是 genericoptions.RecommendedOptions，它用于提供运行apiserver 所需的“推荐”选项。推荐的选项取值可以由函数genericoptions.NewRecommendedOptions() 提供，也可以通过命令行参数获取选项取值。
 - Options.Validate()：Validate方法调用RecommendedOptions进行选项（合并了用户提供的命令行参数）合法性校验。
 - Options.Complete()：注册了一个Admission控制器。
 - Options.Config()：将Options 转换为 Config。主要通过调用 ApplyTo 方法，将 RecommendedOptions 中的 Options 传递给了 RecommendedConfig。
@@ -20,7 +20,7 @@
 
 其主要目的是基于 config 实例化 apiserver。
 
-- init()：将 GVK 安装到 scheme 里，从而实现 GVK 与 Go类型之间的映射。
+- init()：将 k8s 的 core resource 的 GVK 安装到 scheme 里，从而实现 GVK 与 Go 类型之间的映射。
 - Config
 - Config.Complete()：填充 Config
 - completedConfig.New()：创建了核心的 GenericAPIServer，并且将 APIGroupInfo 资源安装到 REST Registry 中，从而使 registry.REST 能够支持 API 对象的 CRUD 和 Watch。
@@ -75,13 +75,13 @@ Create 请求被 genericregistry.Store 处理的过程：
 - custominitializer 包：是 Admission Initializer，它能够为任何 WantsInternalWardleInformerFactory 类型的 Admission 注入InformerFactory。
 - Plugin/XXX：具体的 admission plugin 的实现，会在 Options.Complete() 函数中被注册。Admission plugin 的核心是 Admit() 函数，它可以修改或否决一个 API Server 的请求。
 
-### 总结
+### 整体流程
 
 APIServer 的核心类型是 GenericAPIServer，它是由 genericapiserver.CompletedConfig 的 New() 方法生成的。后者是 genericapiserver.RecommendedConfig 的 Complete() 方法生成的。而 RecommendedConfig 又是从 genericoptions.RecommendedOptions 得到的。apiserver 对Config、Option、Server 等对象都做了一层包装。
 
 RecommendedOptions 对应了用户提供的各类选项，如 Etcd 地址、Etcd 存储前缀、APIServer 的基本信息等。调用 RecommendedOptions 的 ApplyTo 方法，会根据选项推导出 APIServer 所需的、完整的 Config。在这个方法中，甚至会进行自签名证书等重操作，而不是简单的将信息从 Options 复制给 Config。RecommendedOptions 会依次调用它的各个字段的 ApplyTo 方法，从而推导出 RecommendedConfig。
 
-RecommendedConfig 的 Complete 方法，再一次进行配置信息的推导，主要牵涉到 Open API相关的配置。
+RecommendedConfig 的 Complete 方法，再一次进行配置信息的推导，主要牵涉到 OpenAPI 相关的配置。
 
 CompletedConfig 的 New 方法实例化 GenericAPIServer，这一步最关键的逻辑是安装 APIGroup。APIGroup 定义了如何实现 GroupVersion 中 API 的增删改查，它将 GroupVersion 的每种资源映射到 registry.REST，后者具有处理 REST 风格请求的能力，并（默认）存储到 Etcd。
 
@@ -89,7 +89,12 @@ GenericAPIServer 同时提供了一些钩子来处理 Admission 的注册、初�
 
 ### artifacts
 
+本示例通过一个 aa-server 来实现一个 Pizza 店的 API。该 API 提供 2 种 Kind：
 
+- Topping：配料，包括 salami、mozzarella 或 tomato
+- Pizza：提供 Pizza 类型，可以包含多种 Topping。
+
+在实例中，会首先引入 v1alpha1 版本，然后在 v1beta1 中更换 topping 的表达方式。
 
 ## Lab
 
@@ -152,11 +157,32 @@ curl -k --cert-type P12 --cert configs/cert/client.p12:P@ssw0rd \
 https://127.0.0.1:8443/apis
 ```
 
-- List flunders resources：
+- List piaazs and toppings resources：
 
 ```shell
 curl -k --cert-type P12 --cert configs/cert/client.p12:P@ssw0rd \
-https://127.0.0.1:8443/apis/wardle.example.com/v1alpha1/namespaces/default/flunders
+https://127.0.0.1:8443/apis/restaurant.wukong.com/v1alpha1/pizzas
+
+curl -k --cert-type P12 --cert configs/cert/client.p12:P@ssw0rd \
+https://127.0.0.1:8443/apis/restaurant.wukong.com/v1alpha1/namespaces/default/pizzas
+
+curl -k --cert-type P12 --cert configs/cert/client.p12:P@ssw0rd \
+https://127.0.0.1:8443/apis/restaurant.wukong.com/v1alpha1/toppings
+
+curl -k --cert-type P12 --cert configs/cert/client.p12:P@ssw0rd \
+https://127.0.0.1:8443/apis/restaurant.wukong.com/v1alpha1/namespaces/default/topping # topping is not namespace
+
+curl -k --cert-type P12 --cert configs/cert/client.p12:P@ssw0rd \
+https://127.0.0.1:8443/apis/restaurant.wukong.com/v1beta1/pizzas
+
+curl -k --cert-type P12 --cert configs/cert/client.p12:P@ssw0rd \
+https://127.0.0.1:8443/apis/restaurant.wukong.com/v1beta1/namespaces/default/pizzas
+
+curl -k --cert-type P12 --cert configs/cert/client.p12:P@ssw0rd \
+https://127.0.0.1:8443/apis/restaurant.wukong.com/v1beta1/toppings # topping is not registered
+
+curl -k --cert-type P12 --cert configs/cert/client.p12:P@ssw0rd \
+https://127.0.0.1:8443/apis/restaurant.wukong.com/v1beta1/namespaces/default/toppings # topping is not registered
 ```
 
 ##### 通过kube-aggregator
@@ -166,34 +192,39 @@ https://127.0.0.1:8443/apis/wardle.example.com/v1alpha1/namespaces/default/flund
 ```shell
 kubectl apply -f artifacts/example/ns.yaml
 kubectl apply -f artifacts/example/apiservice.yaml
-kubectl apply -f artifacts/example/service.yaml
+kubectl apply -f artifacts/example/service-ext.yaml
 kubectl apply -f artifacts/example/endpoint.yaml
 ```
 
 - 确认 aaserver 已注册资源
 
 ```shell
-kubectl get apiservices.apiregistration.k8s.io | grep wardle
-kubectl -n wardle get svc api -o yaml  
-kubectl -n wardle get ep api -o yaml 
+kubectl get apiservices.apiregistration.k8s.io | grep restaurant
+kubectl -n restaurant get svc aaserver -o yaml  
+kubectl -n restaurant get ep aaserver -o yaml 
 ```
 
-- 创建 flunders 资源
+- 创建 k8s 资源
 
 ```shell
-kubectl apply -f artifacts/flunders/flunder.yaml
+kubectl apply -f artifacts/restaurant/topping-salami.yaml
+kubectl apply -f artifacts/restaurant/topping-tomato.yaml
+kubectl apply -f artifacts/restaurant/topping-mozzarella.yaml
+kubectl get toppings
+kubectl apply -f artifacts/restaurant/pizza-margherita.yaml
+kubectl get pizzas
 ```
 
-- 通过 get -raw 调用
+- 通过 get --raw 调用
 
 ```shell
-kubectl get --raw "/apis/wardle.example.com/v1alpha1/namespaces/wardle/flunders"
+kubectl get --raw "/apis/restaurant.wukong.com/v1alpha1/namespaces/default/pizzas"
 ```
 
 #### cleanup
 
 ```shell
-kubectl delete -f artifacts/flunders/flunder.yaml
+kubectl delete -f artifacts/restaurant
 kubectl delete -f artifacts/example
 ```
 
@@ -202,8 +233,8 @@ kubectl delete -f artifacts/example
 #### 构建镜像
 
 ```shell
-docker build -t wukongsun/sample-apiserver:0.1 .
-kind load docker-image wukongsun/sample-apiserver:0.1 # load image to the kind cluster
+docker build -t wukongsun/custom-aaserver:0.1 .
+kind load docker-image wukongsun/custom-aaserver:0.1 # load image to the kind cluster
 docker exec kind-control-plane crictl images | grep wukongsun # 确认镜像已加载
 ```
 
@@ -223,7 +254,7 @@ kubectl apply -f artifacts/example/auth-reader.yaml
 ```shell
 kubectl apply -f artifacts/example/deployment.yaml
 kubectl -n wardle get pods
-kubectl apply -f artifacts/example/service.yaml
+kubectl apply -f artifacts/example/service-k8s.yaml
 ```
 
 #### 测试
@@ -232,25 +263,30 @@ kubectl apply -f artifacts/example/service.yaml
 
 ```shell
 kubectl apply -f artifacts/example/apiservice.yaml
-kubectl get apiservice v1alpha1.wardle.example.com # 等待直到aaserver服务运行，即AVAILABLE为true
+kubectl get apiservice v1alpha1.restaurant.wukong.com # 等待直到aaserver服务运行，即AVAILABLE为true
 ```
 
 
-- 创建 flunders 资源
+- 创建 k8s 资源
 ```shell
-kubectl apply -f artifacts/flunders/flunder.yaml
+kubectl apply -f artifacts/restaurant/topping-salami.yaml
+kubectl apply -f artifacts/restaurant/topping-tomato.yaml
+kubectl apply -f artifacts/restaurant/topping-mozzarella.yaml
+kubectl get toppings
+kubectl apply -f artifacts/restaurant/pizza-margherita.yaml
+kubectl get pizzas
 ```
 
 - 通过 get --raw 调用
 
 ```shell
-kubectl get --raw "/apis/wardle.example.com/v1alpha1/namespaces/wardle/flunders"
+kubectl get --raw "/apis/restaurant.wukong.com/v1alpha1/namespaces/default/pizzas"
 ```
 
 #### cleanup
 
 ```shell
-kubectl delete -f artifacts/flunders/flunder.yaml
+kubectl delete -f artifacts/restaurant
 kubectl delete -f artifacts/example
 ```
 

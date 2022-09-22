@@ -189,10 +189,5 @@ apiserver 库的目的主要包括：
 
 ### Pizza
 
-本示例通过一个 aa-server 来实现一个 Pizza 店的 API。该 API 提供 2 种 Kind：
 
-- Topping：配料，包括 salami、mozzarella 或 tomato
-- Pizza：提供 Pizza 类型，可以包含多种 Topping。
-
-在实例中，会首先引入 v1alpha1 版本，然后在 v1beta1 中更换 topping 的表达方式。
 

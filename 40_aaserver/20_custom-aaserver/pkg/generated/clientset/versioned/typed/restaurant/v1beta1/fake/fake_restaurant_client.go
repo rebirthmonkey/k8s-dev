@@ -33,6 +33,10 @@ func (c *FakeRestaurantV1beta1) Pizzas(namespace string) v1beta1.PizzaInterface 
 	return &FakePizzas{c, namespace}
 }
 
+func (c *FakeRestaurantV1beta1) Toppings() v1beta1.ToppingInterface {
+	return &FakeToppings{c}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeRestaurantV1beta1) RESTClient() rest.Interface {

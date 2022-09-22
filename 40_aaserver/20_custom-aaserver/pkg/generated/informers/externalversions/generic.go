@@ -62,6 +62,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=restaurant.wukong.com, Version=v1beta1
 	case v1beta1.SchemeGroupVersion.WithResource("pizzas"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Restaurant().V1beta1().Pizzas().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("toppings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Restaurant().V1beta1().Toppings().Informer()}, nil
 
 	}
 

@@ -18,22 +18,9 @@ package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/conversion"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	"20_custom-aaserver/pkg/apis/restaurant"
 )
-
-func addConversionFuncs(scheme *runtime.Scheme) error {
-	err := scheme.AddConversionFuncs(
-		Convert_v1alpha1_PizzaSpec_To_restaurant_PizzaSpec,
-		Convert_restaurant_PizzaSpec_To_v1alpha1_PizzaSpec,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func Convert_v1alpha1_PizzaSpec_To_restaurant_PizzaSpec(in *PizzaSpec, out *restaurant.PizzaSpec, s conversion.Scope) error {
 	idx := map[string]int{}

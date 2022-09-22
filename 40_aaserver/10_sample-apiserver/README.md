@@ -77,7 +77,7 @@ https://127.0.0.1:8443/apis/wardle.example.com/v1alpha1/namespaces/default/flund
 ```shell
 kubectl apply -f artifacts/example/ns.yaml
 kubectl apply -f artifacts/example/apiservice.yaml
-kubectl apply -f artifacts/example/service.yaml
+kubectl apply -f artifacts/example/service-ext.yaml
 kubectl apply -f artifacts/example/endpoint.yaml
 ```
 
@@ -134,7 +134,7 @@ kubectl apply -f artifacts/example/auth-reader.yaml
 ```shell
 kubectl apply -f artifacts/example/deployment.yaml
 kubectl -n wardle get pods
-kubectl apply -f artifacts/example/service.yaml
+kubectl apply -f artifacts/example/service-k8s.yaml
 ```
 
 #### 测试

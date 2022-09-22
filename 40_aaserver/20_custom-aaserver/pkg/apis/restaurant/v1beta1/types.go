@@ -57,3 +57,31 @@ type PizzaList struct {
 
 	Items []Pizza `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
+
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Topping is a topping put onto a pizza.
+type Topping struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	Spec ToppingSpec
+}
+
+type ToppingSpec struct {
+	// cost is the cost of one instance of this topping.
+	Cost float64 `json:"cost" protobuf:"bytes,1,name=cost"`
+}
+
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ToppingList is a list of Topping objects.
+type ToppingList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	Items []Topping `json:"items" protobuf:"bytes,2,rep,name=items"`
+}

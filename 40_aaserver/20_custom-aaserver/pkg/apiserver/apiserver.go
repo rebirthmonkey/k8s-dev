@@ -110,18 +110,18 @@ func (c completedConfig) New() (*CustomServer, error) {
 		GenericAPIServer: genericServer,
 	}
 
-	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(restaurant.GroupName, Scheme, metav1.ParameterCodec, Codecs)
+	restaurantAPIGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(restaurant.GroupName, Scheme, metav1.ParameterCodec, Codecs)
 
-	v1alpha1storage := map[string]rest.Storage{}
-	v1alpha1storage["flunders"] = customregistry.RESTInPeace(toppingstorage.NewREST(Scheme, c.GenericConfig.RESTOptionsGetter))
-	v1alpha1storage["fischers"] = customregistry.RESTInPeace(pizzastorage.NewREST(Scheme, c.GenericConfig.RESTOptionsGetter))
-	apiGroupInfo.VersionedResourcesStorageMap["v1alpha1"] = v1alpha1storage
+	restaurantv1alpha1storage := map[string]rest.Storage{}
+	restaurantv1alpha1storage["toppings"] = customregistry.RESTInPeace(toppingstorage.NewREST(Scheme, c.GenericConfig.RESTOptionsGetter))
+	restaurantv1alpha1storage["pizzas"] = customregistry.RESTInPeace(pizzastorage.NewREST(Scheme, c.GenericConfig.RESTOptionsGetter))
+	restaurantAPIGroupInfo.VersionedResourcesStorageMap["v1alpha1"] = restaurantv1alpha1storage
 
-	v1beta1storage := map[string]rest.Storage{}
-	v1beta1storage["flunders"] = customregistry.RESTInPeace(toppingstorage.NewREST(Scheme, c.GenericConfig.RESTOptionsGetter))
-	apiGroupInfo.VersionedResourcesStorageMap["v1beta1"] = v1beta1storage
+	restaurantv1beta1storage := map[string]rest.Storage{}
+	restaurantv1beta1storage["pizzas"] = customregistry.RESTInPeace(pizzastorage.NewREST(Scheme, c.GenericConfig.RESTOptionsGetter))
+	restaurantAPIGroupInfo.VersionedResourcesStorageMap["v1beta1"] = restaurantv1beta1storage
 
-	if err := s.GenericAPIServer.InstallAPIGroup(&apiGroupInfo); err != nil {
+	if err := s.GenericAPIServer.InstallAPIGroup(&restaurantAPIGroupInfo); err != nil {
 		return nil, err
 	}
 

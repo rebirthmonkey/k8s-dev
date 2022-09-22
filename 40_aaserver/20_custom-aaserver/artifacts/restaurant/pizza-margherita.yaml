@@ -1,0 +1,7 @@
+apiVersion: restaurant.wukong.com/v1alpha1
+kind: Pizza
+metadata:
+  name: margherita
+spec:
+  toppings:
+  - tomato

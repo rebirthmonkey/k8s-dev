@@ -1,0 +1,6 @@
+apiVersion: restaurant.wukong.com/v1alpha1
+kind: Topping
+metadata:
+  name: tomato
+spec:
+  cost: 0.1

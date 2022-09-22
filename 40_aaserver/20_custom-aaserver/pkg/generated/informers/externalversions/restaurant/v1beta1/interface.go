@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// Pizzas returns a PizzaInformer.
 	Pizzas() PizzaInformer
+	// Toppings returns a ToppingInformer.
+	Toppings() ToppingInformer
 }
 
 type version struct {
@@ -42,4 +44,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Pizzas returns a PizzaInformer.
 func (v *version) Pizzas() PizzaInformer {
 	return &pizzaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Toppings returns a ToppingInformer.
+func (v *version) Toppings() ToppingInformer {
+	return &toppingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

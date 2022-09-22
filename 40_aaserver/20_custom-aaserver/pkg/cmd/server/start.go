@@ -109,7 +109,7 @@ func (o *CustomServerOptions) Complete() error {
 	pizzatoppings.Register(o.RecommendedOptions.Admission.Plugins)
 
 	// add admission plugins to the RecommendedPluginOrder
-	o.RecommendedOptions.Admission.RecommendedPluginOrder = append(o.RecommendedOptions.Admission.RecommendedPluginOrder, "BanFlunder")
+	o.RecommendedOptions.Admission.RecommendedPluginOrder = append(o.RecommendedOptions.Admission.RecommendedPluginOrder, "PizzaToppings")
 
 	return nil
 }

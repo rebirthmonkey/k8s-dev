@@ -25,3 +25,7 @@ type PizzaListerExpansion interface{}
 // PizzaNamespaceListerExpansion allows custom methods to be added to
 // PizzaNamespaceLister.
 type PizzaNamespaceListerExpansion interface{}
+
+// ToppingListerExpansion allows custom methods to be added to
+// ToppingLister.
+type ToppingListerExpansion interface{}

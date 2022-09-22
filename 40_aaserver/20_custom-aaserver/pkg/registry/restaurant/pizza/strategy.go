@@ -82,6 +82,10 @@ func (pizzaStrategy) Validate(ctx context.Context, obj runtime.Object) field.Err
 	return validation.ValidatePizza(pizza)
 }
 
+func (pizzaStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
+	return nil
+}
+
 func (pizzaStrategy) AllowCreateOnUpdate() bool {
 	return false
 }
@@ -95,4 +99,8 @@ func (pizzaStrategy) Canonicalize(obj runtime.Object) {
 
 func (pizzaStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
 	return field.ErrorList{}
+}
+
+func (pizzaStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
+	return nil
 }

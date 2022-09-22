@@ -1,7 +1,0 @@
-apiVersion: restaurant.wukong.com/v1alpha1
-kind: Pizza
-metadata:
-  name: pizza1
-  namespace: restaurant
-  labels:
-    sample-label: "true"
