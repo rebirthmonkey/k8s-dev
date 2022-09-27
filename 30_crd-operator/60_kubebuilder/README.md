@@ -4,11 +4,17 @@ kubebuilder 为 Operator 搭建好了基本的代码框架，生成了一堆文�
 
 ## controller-runtime
 
-该项目包含若干 Go 库，用于快速构建 controller。kubebuilder 依赖于此项目，使用 controller-runtime 的 Client 接口来实现针对 k8s 资源的 CRUD 操作。
+controller-runtime 库包含若干 Go 库，用于快速构建
+
+- controller-manager：
+- controller：
+- dynamic clientset：
+
+kubebuilder 依赖于 controller-runtime 库，使用 controller-runtime 的 Client 接口来实现针对 k8s 资源的 CRUD 操作。
 
 ### Manager
 
-controller-runtime 由 Manager 串联起来，用于启动（Manager.Start） controller，管理被多个 controller 共享的依赖，例如 Cache、Client、Scheme。通过 manager.Manager 来创建 client.Client，SDK 生成的代码中包含创建 Manager 的逻辑，Manager 持有一个 Cache 和一个 Client。
+controller-runtime 由 Manager（等价于 k8s 的 controller-manager）串联起来，用于启动（Manager.Start） controller，管理被多个 controller 共享的依赖，例如 Cache、Client、Scheme。通过 manager.Manager 来创建 client.Client，SDK 生成的代码中包含创建 Manager 的逻辑，Manager 持有一个 Cache 和一个 Client。
 
 <img src="figures/image-20220608172034690.png" alt="image-20220608172034690" style="zoom:50%;" />
 
@@ -36,9 +42,61 @@ reconcile.Request 入队时会自动去重，也就是说一个 ReplicaSet 创�
 
 #### Reconciler
 
-Reconciler 是 Controller 的核心逻辑所在，它负责调和使 status  逼近期望状态 spec。例如，当针对 ReplicaSet 对象调用 Reconciler 时，发现 ReplicaSet 要求 5 实例，但是当前系统中只有 3 个 Pod。这时 Reconciler 应该创建额外的两个 Pod，并且将这些 Pod 的 OwnerReference 指向前面的 ReplicaSet。
+Reconciler 是 Controller 的核心逻辑所在，它负责调和使 status 逼近期望状态 spec。例如，当针对 ReplicaSet 对象调用 Reconciler 时，发现 ReplicaSet 要求 5 实例，但是当前系统中只有 3 个 Pod。这时 Reconciler 应该创建额外的两个 Pod，并且将这些 Pod 的 OwnerReference 指向前面的 ReplicaSet。
 
 Reconciler 通常仅处理一种类型的对象，OwnerReference 用于从子对象（如 Pod）触发父对象的调和（如 ReplicaSet）操作。
+
+##### SetupWithManager()
+
+Controller 还应该实现一个 SetupWithManager(mgr ctrl.Manager) 方法，此方法将本 controller 注册给 controller-manager：
+
+```go
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
+// 创建一个被mgr管理的控制器，指定控制器喧嚣
+  return ctrl.NewControllerManagedBy(mgr).WithOptions(controller.Options{
+// 并发
+    MaxConcurrentReconciles: r.Concurrence,
+  }).For(&tcmv1.MoveToVpc{}).Complete(r)
+}
+```
+
+##### WithEventFilter()
+
+如果想在进入 controller 之前就过滤掉不符合条件（如已经标记为删除）的资源，则需要修改 SetupWithManager() 方法，增加 WithEventFilter 调用：
+
+```go
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
+  return ctrl.NewControllerManagedBy(mgr).WithOptions(controller.Options{
+MaxConcurrentReconciles: r.Concurrence,}).For(&tcmv1.MoveToVpc{}).WithEventFilter(predicate.Funcs{
+  // 分别对资源增加、删除、更新事件进行过滤
+  CreateFunc: func(event event.CreateEvent) bool {
+    return r.predicate(event.Object)
+  },
+  DeleteFunc: func(event event.DeleteEvent) bool {
+    return r.predicate(event.Object)
+  },
+  UpdateFunc: func(event event.UpdateEvent) bool {
+    return r.predicate(event.ObjectNew)
+  },
+  }).Complete(r)
+}
+```
+
+#### 注册 Controller
+
+在 `cmd/manager/main.go` 中实例化 controller，并调用 SetupWithManager() 注册到 controller-manager 中：
+
+```go
+    if err = movetovpc.NewMoveToVpcReconciler(
+        movetovpc.Config{
+            Client:      mgr.GetClient(),
+            Concurrence: concurrence,
+        },
+    ).SetupWithManager(mgr); err != nil {
+        setupLog.Error(err, "unable to create controller", "controller", "MoveToVpc")
+        os.Exit(1)
+    }
+```
 
 ### Cluster
 
@@ -60,17 +118,89 @@ Cache 实际是 client-go 中 Informer 的包装，为读客户端提供本地�
 
 ## 开发步骤
 
-### group/version/xx_types.go
+以 xxx 为例。
 
-建立、更新 CRD 对应的 struct，然后需要运行 `make`。
+### 添加 GVK
 
-### controller/kind/xx_controller.go
+添加 group name 和 version
 
-在 Reconcile() 中写入核心业务逻辑，然后可以运行 operator `make run`。
+### 定义 struct
 
-### Config/samples/xx.yaml
+在 group/version/xx_types.go 文件中建立、更新 CRD 对应的 struct。通常至少需要定义 Xxx（资源名的驼峰式大小写）、XxxcList（表示资源的列表）两个结构，Xxx 结构至少包含 Spec、Status 两个额外字段，对应结构 XxxSpec、XxxStatus，分别代表规格（输入参数）和状态（当前状态）。此外，相关结构上必须提供必要的 kubebuilder 注解、所有字段都应该提供JSON tag（驼峰式大小写）：
 
-需要根据 CRD 建立自己的 CR。
+```go
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+
+// Xxx is the Schema for the xxx API
+type Xxx struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              XxxSpec   `json:"spec"`
+	Status            XxxStatus `json:"status,omitempty"`
+}
+
+//+kubebuilder:object:root=true
+
+// MoveToVpcList contains a list of MoveToVpc
+type XxxList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Xxx `json:"items"`
+}
+```
+
+##### 代码生成
+
+添加完新资源后需要执行下面的命令，重新生成zz_generated.deepcopy.go文件，该文件包含了一系列和深拷贝有关的代码：
+
+```
+make generate
+```
+
+注意，每当修改资源的任何字段，该命令都需要再次执行。makefile 已经正确处理好依赖，所有依赖 generate 的目标都会自动调用它。
+
+### 编写业务逻辑
+
+在 controller/kind/xx_controller.go 文件的 Reconcile() 中写入核心业务逻辑，然后可以运行 operator `make run`。
+
+### Scheme 注册
+
+需要在 apis/v1/xxx_types.go 文件的 init() 方法中，将定义的资源、资源列表注册到 Scheme：
+
+```go
+func init() {
+  SchemeBuilder.Register(&Xxxx{}, &XxxList{})
+}
+```
+
+### __internal 注册
+
+修改 apis/v1/groupversion_info.go，将资源注册到 __internal 版本：
+
+```go
+SchemeBuilderInternal = runtime.NewSchemeBuilder(func(s *runtime.Scheme) error {
+  s.AddKnownTypes(GroupVersionInternal, &Xxx{}, &XxxList{})
+  return nil
+})
+```
+
+### 资源生命周期回调函数注册
+
+修改 cmd/apiserver/main.go 中的 ResourcesConfig，为资源注册生命周期回调函数：
+
+```go
+ResourcesConfig: map[string]map[string]apiserver.ResourceConfig{
+  apiv1.ResourceMovetovpcs: {
+    NewFunc: func() runtime.Object { return &apiv1.Xxx{} },  // 创建资源对象的回调
+    NewListFunc: func() runtime.Object { return &apiv1.XxxList{} },  // 创建资源对象列表的回调
+  },
+}
+```
+
+### 编写 Artifects/Manifests
+
+需要根据 CRD 建立自己的 CR yaml 文件。
 
 ## Lab
 

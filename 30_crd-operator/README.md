@@ -2,13 +2,13 @@
 
 ## CRD
 
-“资源”对应着 k8s API中的一个端点（Endpoint），它存储了某种类型的 API 对象。在 k8s 中使用的 Deployment、DamenSet、StatefulSet、Service、Ingress、ConfigMap、Secret 这些都是资源。而对这些资源的创建、更新、删除的动作都会被称为为事件（Event），k8s 的 Controller Manager 负责事件监听，并触发相应的动作来满足期望（Spec）。这种方式也就是声明式，即用户只需要关心应用程序的最终状态。当在使用中发现现有的这些资源不能满足需求时，k8s 提供了自定义资源 CR（Custom Resource）和 controller 为应用程序提供基于 k8s 扩展。CR 与其他 k8s 的核心资源放在同一个 Etcd 中，并且由同一个 k8s-apiserver 提供服务。
+“资源”对应着 k8s API中的一个 Endpoint，它存储了某种类型的 API 对象。在 k8s 中使用的 Deployment、DamenSet、StatefulSet、Service、Ingress、ConfigMap、Secret 这些都是资源。而对这些资源的创建、更新、删除的动作都会被称为为事件（Event），k8s 的 Controller Manager 负责事件监听，并触发相应的动作来满足期望（Spec）。这种方式也就是声明式，即用户只需要关心应用程序的最终状态。当在使用中发现现有的这些资源不能满足需求时，k8s 提供了自定义资源 CR（Custom Resource）和 controller 为应用程序提供基于 k8s 扩展。CR 与其他 k8s 的核心资源放在同一个 Etcd 中，并且由同一个 k8s-apiserver 提供服务。
 
 自定义资源 CR（Custom Resources）是对 k8s API 的扩展，代表某种自定义的配置或独立运行的服务。和内置资源一样，CR 本身仅仅是一段结构化数据，仅仅和相应自定义 controller 联用后，才能作为声明式 API。CR 描述了期望的资源状态，由 controller 来尽力达到此状态。自定义 controller 由用户部署到集群，这种 controller 独立于集群本身的生命周期。尽管自定义c controller 可以和任何类型的资源配合，但是对于 CR 特别有意义。CoreOS 提出的 Operator Framework，就是自定义 controller 联用 CR 的例子。
 
 ### CRD
 
-CRD（Custom Resource Definition）是一种 API 资源，利用它可以定义 CR，k8s 负责 CRD 的存储。使用 CRD 而非 aa-server 可以免去编写次级 API Server 的烦恼，但是其灵活性不如 aa-server。
+CRD（Custom Resource Definition）是一种 API 资源，它实际上是自定义资源的 Schema、利用它可以定义 CR，而 k8s 负责 CRD 的存储。使用 CRD 而非 aa-server 可以免去编写次级 API Server 的烦恼，但是其灵活性不如 aa-server。
 
 CRD 是对自定义资源的描述，也就是介绍这个资源有什么属性呀，这些属性的类型是什么，结构是怎样的这类。在没有对应 controller 的情况下，它仅仅用于少量配置信息的保存，与 k8s 原生的资源放在同一个 Etcd 中。CRD/CR 仅仅是一段声明信息，如果需要发挥更大作用，必须配合相应的 controller 才有价值。
 

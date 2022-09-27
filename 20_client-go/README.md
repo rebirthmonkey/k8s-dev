@@ -118,7 +118,7 @@ Informer 可以非常方便的动态获取各种资源的实时变化，开发�
 
 ## Controller
 
-在 k8s 中，controller 实现了一个控制循环，它通过 kube-apiserver 观测集群中的共享状态，进行必要的变更，尝试把资源对应的当前状态期望的目标状态。controller 负责执行例行性任务来保证集群尽可能接近其期望状态。典型情况下控制器读取 .spec 字段，运行一些逻辑，然后修改 .status 字段。
+在 k8s 中，controller 实现了一个控制循环，它通过 kube-apiserver 观测集群中的共享状态，进行必要的变更从而把资源对应的当前状态（status）向期望的目标状态（spec）转变。controller 负责执行例行性任务来保证集群尽可能接近其期望状态，典型情况下控制器读取 .spec 字段，执行一些逻辑，然后修改 .status 字段。
 
 controller 可以对 k8s 的核心资源（如 pod、deployment）等进场操作，但也可以观察并操作用户自定义资源。k8s 自身提供了大量的 controller，并由 controller manager 统一管理。
 

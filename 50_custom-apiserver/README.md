@@ -2,7 +2,9 @@
 
 ## 简介
 
-基于 aaserver，实现一个独立运行、使用 HTTP 协议的 custom-apiserver。
+基于 [k8s apiserver](https://github.com/kubernetes/apiserver)，实现一个独立运行、使用 HTTP 协议的 custom-apiserver。
+
+
 
 ### 解除依赖
 
@@ -50,7 +52,54 @@ stoppedCh, err = s.SecureServingInfo.Serve(s.Handler, s.ShutdownTimeout, interna
 
 ### 添加 OpenAPI
 
+## 架构
 
+### controller-manager
+
+济源 controller-runtime 重写一个 controller-manager
+
+
+
+### HTTP Server
+
+k8s 风格的 apiserver 本质上就是一个 http.Handler，它的核心类型是 APIServerHandler，该类型：
+
+1. 将标准的面向资源的 RESTful API 委托给 go-rest 的 Container 处理
+2. 将其它 HTTP API 委托给 NonGoRestfulMux 处理，这其中就包括 healthcheck 这样的 API
+
+k8s 风格的 API 资源具有规范化、冗长的特点，修改资源时发送的信息很多，不利于使用。此外，也需要让 custom-apiserver 具有一般性的 HTTP Server 的能力。为此，可以在 NonGoRestfulMux 注册一个额外的 Path 前缀，如 /wukong，并通过 Echo、Gin 等框架管理此前缀下的 API endpoint。
+
+要添加非标 endpoint（也被称为 apiexts），需要在 `pkg/apiexts/` 下创建对应的包，例如 Xxx 的包名是 xxx。此包名也作为其子资源 endpoint 的前缀，如 /wukong/xxx/。该包应该提供一个 Register() 函数，能够将路由注册给 Echo。
+
+#### 启动 web server
+
+在 `cmd/manager/main.go` 中创建、启动 apiextsserver
+
+```go
+apiextServer := apiextsserver.Server(apiextAddr, apiServer, token, cmgr.GetClient())
+go func() {
+  err = apiextServer.ListenAndServe()
+  if err != nil {
+	  panic(err)
+  }
+}()
+```
+
+#### 路由注册
+
+在 `cmd/apiserver/main.go` 中的 `AdditionalHandlers` 中注册转发路由：
+
+```go
+AdditionalHandlers: map[string]func(clients client.Clients) http.Handler{
+	fmt.Sprintf("%s/", teleportPrefix): func(clients client.Clients) http.Handler {
+  return httputil.NewSingleHostReverseProxy(apiextURL)
+  },
+},
+```
+
+### kubectl 配置
+
+自行开发的 custom-apiserver 默认支持 kubectl，kubectl 的配置文件在 `configs/kubeconfig` 中，采用 token 认证模式。
 
 ## 代码
 
@@ -90,19 +139,37 @@ s.GenericAPIServer.InstallAPIGroup(&apiGroupInfo)
 
 
 
+## Lab
 
+运行
 
-## HTTP Server
-
-在启动服务器之前，可以直接访问 `GenericAPIServer.Handler.NonGoRestfulMux`，`NonGoRestfulMux` 实现了：
-
-```go
-type mux interface {
-    Handle(pattern string, handler http.Handler)
-}
+```shell
+go run main.go \
+--backend=etcd \
+--etcd-servers=http://127.0.0.1:2379 \
+--file-rootpath=/tmp/custom-apiserver \
+--request-timeout=60m \
+--token-auth-file=configs/token.csv \
+--unrestricted-update=true \
+--kubectl-disabled=false \
+--kubectl-ephemeral-token=false \
+--authn-allow-localhost=true
 ```
 
-调用 Handle 即可为任何路径注册处理器。
+
+
+```shell
+curl -k --cert /tmp/custom-apiserver/cert/client.p12:P@ssw0rd \
+https://127.0.0.1:8443/apis/restaurant.wukong.com/v1alpha1/pizzas
+
+curl --insecure https://127.0.0.1:8443/apis
+curl -XGET http://127.0.0.1:6080/apis
+curl -XGET http://127.0.0.1:6080/apis/restaurant.wukong.com/v1alpha1/pizzas
+```
+
+
+
+
 
 
 

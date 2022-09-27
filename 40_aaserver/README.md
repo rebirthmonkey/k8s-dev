@@ -15,6 +15,21 @@ aaserver（aggregated-apiserver）的设计思路是允许用户编写一个自�
 - 需要扩展 /status 和 /scale 子资源，如 /logs、/port-forward 等
 - 可以用 Go 高效实现所有操作，包括验证、准入和转换，尤其是支持大规模场景
 
+### vs. CRD
+
+使用CRD：
+1. 不需要编程
+2. 需要实现 CRD controller，可以使用任何编程语言
+3. 不需要额外的 aaserver，不需要理解 API 聚合的概念
+
+使用API聚合（Aggregation）：
+1. 需要 Go 编程
+2. 可以对 API 行为进行更细粒度的控制，如数据如何存储、如何在 API 版本之间转换
+3. 需要运行额外的 aaserver 进程
+4. 需要自己处理多版本 API 的支持
+
+
+
 ## 架构
 
 ### kube-apiserver
@@ -82,7 +97,7 @@ Scheme 用于存储 GVK（Kind 的不同版本）以及它们之间的转换 Con
 - 默认值设置：对外部版本未设值的字段填充，其代码在 defaults.go 文件中。
 - 版本转换：将收到的外部版本（如 v1）转换成内部版本（如 int），其代码在 conversion.go 文件中。
 
-##### Admission 准入
+##### Admission Control
 
 Admission 是针对内部版本实现的，不需要为每个外部版本实现一次。变更 Admission 使用 Admit() 函数，而验证 Admission 使用 Validate() 函数，其代码在 `apis/group-name/validation/validation.go` 内。
 
@@ -116,7 +131,7 @@ Admission 是针对内部版本实现的，不需要为每个外部版本实现�
 
 将内部数据结构进行序列化，转换成外部请求格式（如 JSON）。
 
-### vs. aasserver
+### vs. aaserver
 
 aaserver 与 kube-apiserver 都是基于 `k8s.io/apiserver` 这个库来实现的。但最大的区别在于 aaserver 依赖于一个 k8s 集群运行，有一个可用的 kube-apiserver 来代理或获取其他 k8s 资源。kube-aggregator 在 kube-apiserver 中用于用于代理、转发 aaserver 请求。其处理流程包括：
 
@@ -164,6 +179,10 @@ aaserver 拥有自己的 resource filter：包括解码、转换、准入、REST
 
 之前的 CRD 不同，aaserver 的 resource 添加是 hard-code 在 `pkg/apiserver/apiserver.go` 文件中的。当通过 `completedConfig.New()` 创建 server 时，通过 aipGroupInfo 结构体定义 resource，并包含不同版本，让后由 `GenericAPIServer.InstallAPIGroup(&apiGroupInfo)` 进行添加。
 
+### Admission Control
+
+【1】
+
 ## 代码
 
 ### apiserver库
@@ -181,13 +200,13 @@ apiserver 库的目的主要包括：
 
 ### sample-apiserver
 
-- [sample-apiserver](10_sample-apiserver/.bak/README.md)：k8s 提供了一个样例 [sample-apiserver](https://github.com/kubernetes/sample-apiserver)，但是这个例子依赖于主 kube-apiserver。即使不使用 authn/authz 或 kube-aggregator，也是如此。在启动时需要通过 `--kubeconfig` 来指向一个主 kube-apiserver，样例中的 `SharedInformer` 会连接到主 `kube-apiserver` 来访问 k8s 资源。
+- [sample-apiserver](10_sample-apiserver/.bak/README.md)：k8s 提供了一个样例 [sample-apiserver](https://github.com/kubernetes/sample-apiserver)，这个例子依赖于主 kube-apiserver。即使不使用 authn/authz 或 kube-aggregator，也是如此。在启动时需要通过 `--kubeconfig` 来指向一个主 kube-apiserver，样例中的 `SharedInformer` 会连接到主 `kube-apiserver` 来访问 k8s 资源。
 
 ### custom-aaserver
 
 - [custom-aaserver]()
 
-### Pizza
+## Ref
 
-
+1. [K8S风格的Operator模式](https://iwiki.woa.com/pages/viewpage.action?pageId=1440218670)
 
