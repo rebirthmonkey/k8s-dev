@@ -13,11 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"50_custom-apiserver/pkg/apiserver/consts"
-	"k8s.io/apiserver/pkg/authorization/authorizer"
-	unionauthz "k8s.io/apiserver/pkg/authorization/union"
-
 	"50_custom-apiserver/pkg/apiserver/client"
+	"50_custom-apiserver/pkg/apiserver/consts"
 	"50_custom-apiserver/pkg/apiserver/names"
 	"50_custom-apiserver/pkg/apiserver/store"
 	"50_custom-apiserver/pkg/apiserver/strategy"
@@ -31,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
-	unionauthn "k8s.io/apiserver/pkg/authentication/request/union"
+	"k8s.io/apiserver/pkg/authorization/authorizer"
 	genericapifilters "k8s.io/apiserver/pkg/endpoints/filters"
 	"k8s.io/apiserver/pkg/endpoints/openapi"
 	"k8s.io/apiserver/pkg/features"
@@ -409,12 +406,12 @@ func (t *teleportServer) Prepare(stopCh <-chan struct{}) error {
 	}
 	genericConfig.LoopbackClientConfig = insecureCfg
 
-	genericConfig.Authorization = genericapiserver.AuthorizationInfo{
-		Authorizer: unionauthz.New(cfg.Authorizers...),
-	}
-	genericConfig.Authentication = genericapiserver.AuthenticationInfo{
-		Authenticator: unionauthn.NewFailOnError(cfg.Authenticators...),
-	}
+	//genericConfig.Authorization = genericapiserver.AuthorizationInfo{
+	//	Authorizer: unionauthz.New(cfg.Authorizers...),
+	//}
+	//genericConfig.Authentication = genericapiserver.AuthenticationInfo{
+	//	Authenticator: unionauthn.NewFailOnError(cfg.Authenticators...),
+	//}
 
 	completedConfig := genericConfig.Complete()
 	t.completedGenericConfig = completedConfig
