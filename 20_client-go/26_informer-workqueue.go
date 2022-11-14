@@ -12,26 +12,26 @@ import (
 
 func main() {
 
-	//create config
+	// create config
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
 		panic(err)
 	}
 
-	//create client
+	// create clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	//get informer
+	// create informer
 	factory := informers.NewSharedInformerFactory(clientset, 0)
 	informer := factory.Core().V1().Pods().Informer()
 
-	// add workqueue
+	// create workqueue
 	rateLimitingQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "controller")
 
-	//add event handler
+	// add event handler
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
@@ -59,7 +59,7 @@ func main() {
 		},
 	})
 
-	//start informer
+	// start informer
 	stopCh := make(chan struct{})
 	factory.Start(stopCh)
 	factory.WaitForCacheSync(stopCh)

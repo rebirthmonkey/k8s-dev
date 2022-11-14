@@ -27,15 +27,15 @@ const (
 )
 
 type controller struct {
-	client        kubernetes.Interface
+	clientSet     kubernetes.Interface
 	ingressLister networkingLister.IngressLister
 	serviceLister coreLister.ServiceLister
 	workQueue     workqueue.RateLimitingInterface
 }
 
-func NewController(client kubernetes.Interface, serviceInformer coreInformer.ServiceInformer, ingressInformer networkingInformer.IngressInformer) controller {
+func NewController(clientSet kubernetes.Interface, serviceInformer coreInformer.ServiceInformer, ingressInformer networkingInformer.IngressInformer) controller {
 	c := controller{
-		client:        client,
+		clientSet:     clientSet,
 		ingressLister: ingressInformer.Lister(),
 		serviceLister: serviceInformer.Lister(),
 		workQueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "ingressManager"),
@@ -67,17 +67,17 @@ func (c *controller) addService(obj interface{}) {
 }
 
 func (c *controller) updateService(oldObj interface{}, newObj interface{}) {
-	// 比较annotation
+	// 比较 annotation
 	if reflect.DeepEqual(oldObj, newObj) {
 		return
 	}
+
 	c.enqueue(newObj)
 }
 
 func (c *controller) deleteIngress(obj interface{}) {
 	ingress := obj.(*networkingv1.Ingress)
 	ownerReference := metav1.GetControllerOf(ingress)
-
 	if ownerReference == nil {
 		return
 	}
@@ -132,24 +132,24 @@ func (c *controller) syncService(key string) error {
 		}
 		return err
 	}
-
 	_, ok := service.GetAnnotations()["ingress/http"]
+
 	ingress, err := c.ingressLister.Ingresses(namespaceKey).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
 	if ok && errors.IsNotFound(err) {
-		//create ingress
+		// create ingress
 		fmt.Println("k8s app: create ingress", name)
 		ig := c.newIngress(service)
-		_, err := c.client.NetworkingV1().Ingresses(namespaceKey).Create(context.TODO(), ig, metav1.CreateOptions{})
+		_, err := c.clientSet.NetworkingV1().Ingresses(namespaceKey).Create(context.TODO(), ig, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
 	} else if !ok && ingress != nil {
-		//delete ingress
-		err := c.client.NetworkingV1().Ingresses(namespaceKey).Delete(context.TODO(), name, metav1.DeleteOptions{})
+		// delete ingress
+		err := c.clientSet.NetworkingV1().Ingresses(namespaceKey).Delete(context.TODO(), name, metav1.DeleteOptions{})
 		if err != nil {
 			return err
 		}

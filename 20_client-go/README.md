@@ -18,7 +18,7 @@ kubeconfig 用于管理访问 kube-apiserver 的配置信息，默认情况下�
 
 ### RESTClient
 
-RESTClient 是最基础的客户端，它对 HTTP Request 进行了封装，实现了 RESTful 风格的 API，后续的ClientSet、DynamicClient、DiscoveryClient 都是基于 RESTClient 的。
+RESTClient 是最基础的客户端，它对 HTTP Request 进行了封装，实现了 RESTful 风格的 API，后续的 ClientSet、DynamicClient、DiscoveryClient 都是基于 RESTClient 实现的。
 
 ### ClientSet
 
@@ -34,9 +34,9 @@ DynamicClient 的输入和输出都是 `*unstructred.Unstructured` 对象，它�
 
 DiscoveryClient 用于发现 kube-apiserver 所支持的 group、version 和 resource。`kubectl api-versions` 与 `kubectl api-resources` 命令通过 DiscoveryClient 实现，但它也是基于 RESTClient 的基础上封装的。
 
-## Informer
+## Informer 框架
 
-Informer 会观察 kube-apiserver 中的某一种资源，并在发现资源发生变化时出发某些动作。
+Informer 是基于 client-go 实现的 k8s 客户端程序（类似 controller）框架，它用于观察 kube-apiserver 中的某一种资源，并在发现资源发生变化时触发某些动作。
 
 一般使用的 Informer 为 SharedIndexInformer 类型，实现了sharedIndexInformer 共享机制。对于同一个资源，会存在多个 Listener 去监听它的变化，如果每一个 Listener 都来实例化一个对应的 Informer 实例，那么会存在非常多冗余的 List、watch 操作，导致 kube-apiserver 压力大。因此一个良好的设计思路为：Singleton 模式，同一类资源 Informer 共享一个 Reflector，这就是 K8s 中 SharedInformer 的机制。
 
@@ -44,7 +44,7 @@ Informer 会观察 kube-apiserver 中的某一种资源，并在发现资源发�
 
 ### Reflector
 
-Reflector 负责监控（watch）对应的资源，其中包含 ListerWatcher、store(DeltaFIFO)、lastSyncResourceVersion、resyncPeriod 等信息。当资源发生变化时，会触发相应 resource object 的变更事件，并将该 resource object 及对其的操作类型（统称为 Delta）放入本地缓存 DeltaFIFO 中。
+Reflector 基于 client-go 实现监控（watch）对应的资源，其中包含 ListerWatcher、store(DeltaFIFO)、lastSyncResourceVersion、resyncPeriod 等信息。当资源发生变化时，会触发相应 resource object 的变更事件，并将该 resource object 及对其的操作类型（统称为 Delta）放入本地缓存 DeltaFIFO 中。
 
 这是远端（kube-apiserver）和本地（DeltaFIFO、Indexer、Listener）之间数据同步逻辑的核心，是通过 ListAndWatch 方法来实现。
 
@@ -52,7 +52,7 @@ Reflector 负责监控（watch）对应的资源，其中包含 ListerWatcher、
 
 Reflector 主要就是 ListAndWatch 函数，负责获取资源列表（list）和监控（watch）指定的 k8s 资源。
 
-Etcd 存储集群的数据信息，而 kube-apiserver 作为统一入口，任何对数据的操作都必须经过 kube-apiserver。客户端（如kubelet、scheduler、controller-manager）通过 list-watch 监听kube-apiserver 中的资源（如 pod、rs、rc 等）的 create、update和 delete 事件，并针对事件类型调用相应的 handler 事件处理函数。
+Etcd 存储集群的数据信息，而 kube-apiserver 作为统一入口，任何对数据的操作都必须经过 kube-apiserver。客户端（如 kubelet、scheduler、controller-manager）通过 list-watch 监听kube-apiserver 中的资源（如 pod、rs、rc 等）的 create、update和 delete 事件，并针对事件类型调用相应的 handler 事件处理函数。
 
 list-watch 有 list 和 watch 两部分组成。list 就是调用资源的 list API 罗列所有资源，它基于 HTTP 短链接实现。watch 则是调用资源的 watch  API 监听资源变更事件，基于 HTTP 长链接实现。以 pod 资源为例，它的 list 和 watch API 分别为：
 
@@ -104,7 +104,8 @@ DeltaFIFO 是用于存储 Reflector 获得的待处理 resource object 及其操
 
 DeltaFIFO 由一个 FIFO 和 Delta 的 Map 组成，其中 map 会保存对 resource object 的操作类型。
 
-![image-20220904141010968](figures/image-20220904141010968.png)
+<img src="figures/image-20220904141010968.png" alt="image-20220904141010968" style="zoom:50%;" />
+
 - 生产者：DeltaFIFO 的生产者是 Reflector 调用的 DeltaFIFO 的 Add 方法。
 - 消费者：DeltaFIFO 的消费者是 Processor 调用的 DeltaFIFO 的 Pop 方法。
 
@@ -114,11 +115,11 @@ Processor（HandlerDelta）是一个针对不同 resource 的 handler 回调函�
 
 Informer 可以非常方便的动态获取各种资源的实时变化，开发者只需要在对应的 Informer 的 Processor 中调用 `AddEventHandler` 添加相应的逻辑处理 `AddFunc`、 `DeleteFunc`、 `UpdateFun`，就可以处理该 resource 的`Added`、`Deleted`、`Updated`动态变化。这样，整个开发流程就变得非常简单，开发者只需要注重回调的逻辑处理，而不用关心具体事件的生成和派发。
 
-在大部分 Controller 中，Handler 的操作逻辑包括：更新给 Indexer、将 resource object 推送到 WorkQueue，从而等待其他 worker 来做下一步处理。
+在大部分 Controller 中，Handler 的操作逻辑包括：更新 Indexer、将 resource object 推送到 WorkQueue，从而等待其他 worker 来做下一步处理。因此，对 Delta 真正的操作不在 Process/Handler，它只是对 DeltaFIFO 的消费，真正的操作会由 Processor/Handler 转发给 Controller/Worker 来实施。
 
 ## Controller
 
-在 k8s 中，controller 实现了一个控制循环，它通过 kube-apiserver 观测集群中的共享状态，进行必要的变更从而把资源对应的当前状态（status）向期望的目标状态（spec）转变。controller 负责执行例行性任务来保证集群尽可能接近其期望状态，典型情况下控制器读取 .spec 字段，执行一些逻辑，然后修改 .status 字段。
+在 k8s 中，controller 实现了一个控制循环，它通过 kube-apiserver 观测集群中的共享状态，进行必要的变更从而把资源对应的当前状态（status）向期望的目标状态（spec）转变。controller 负责执行例行性任务来保证集群尽可能接近其期望状态，典型情况下控制器读取 `.spec` 字段、执行一些逻辑、然后修改 `.status` 字段。
 
 controller 可以对 k8s 的核心资源（如 pod、deployment）等进场操作，但也可以观察并操作用户自定义资源。k8s 自身提供了大量的 controller，并由 controller manager 统一管理。
 
@@ -132,7 +133,7 @@ ThreadSafeMap 是一个在内存中实现并发安全的 map，在每次增删�
 
 ### WorkQueue
 
-Processor 中注册的 Handler 通过回调函数接收到对应的 event 之后，需要将对应的 ObjKey 放入 WorkQueue 中，从而方便多个 worker 去消费。WorkQueue 内部主要有 queue、dirty、processing 三个结构，其中 queue 为 slice 类型保证了有序性， dirty 与 processing 为 hashmap，提供去重属性。使用 workqueue 的优势包括：
+Processor 中注册的 Handler 通过回调函数接收到对应的 event 之后，需要将对应的 ObjKey 放入 WorkQueue 中，从而方便多个 worker 去消费。WorkQueue 内部主要有 queue、dirty、processing 三个结构，其中 queue 为 slice 类型保证了有序性， dirty 与 processing 为 hashmap，提供去重属性。使用 workQueue 的优势包括：
 
 - 并发：支持多生产者、多消费者
 - 去重：由dirty保证一段时间内的一个元素只会被处理一次
@@ -155,7 +156,9 @@ Processor 中注册的 Handler 通过回调函数接收到对应的 event 之后
 - 计数器算法：
 - 混合模式：
 
-### 控制循环
+### Worker
+
+#### 控制循环
 
 - 读取资源的状态：通常采用事件驱动模式
 - 改变资源的状态：
@@ -166,8 +169,8 @@ Processor 中注册的 Handler 通过回调函数接收到对应的 event 之后
 
 总体来说，需要自定义的代码只有：
 
-1. 调用`AddEventHandler`，添加相应的逻辑处理`AddFunc`、`DeleteFunc`、`UpdateFun`
-2. 实现 worker 逻辑从 workqueue 中消费 ObjKey 即可。
+1. 添加 Handler：调用`AddEventHandler`，添加相应的逻辑处理`AddFunc`、`DeleteFunc`、`UpdateFun`。
+2. 实现 worker 逻辑：从 workqueue 中消费 ObjKey 即可。
 
 ## Lab
 

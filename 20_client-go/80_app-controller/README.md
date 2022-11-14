@@ -2,7 +2,7 @@
 
 ## 简介
 
-本案例来源于[此](https://github.com/baidingtech/operator-lesson-demo.git)，它自定义实现一个简单的 controller，其作用是 watch 到有新的、带有特殊 annotation（ingress/http:true) 的 service 资源，一旦有新的资源被添加，则会自动添加对应的 ingress 资源。
+本案例来源于[此代码](https://github.com/baidingtech/operator-lesson-demo.git)，它自定义实现一个简单的 controller，其作用是 watch 到有新的、带有特殊 annotation（ingress/http:true) 的 service 资源，一旦有新的资源被添加，则会自动添加对应的 ingress 资源。
 
 <img src="figures/image-20220912100551553.png" alt="image-20220912100551553" style="zoom:50%;" />
 
@@ -12,9 +12,10 @@ Controller 监听 Service 资源
   - 包含指定 annotation（ingress/http:true），创建 ingress 资源对象
   - 不包含指定 annotation，忽略
 - 删除 Service：
-  - 删除 ingress 资源对象
+  - 包含指定 annotation（ingress/http:true），删除 ingress 资源对象
+  - 不包含指定 annotation，忽略
 - 更新 Service：
-  - 包含指定 annotation，检查 ingress 资源对象是否存在。不存在则创建，存在则忽略。
+  - 包含指定 annotation（ingress/http:true），检查 ingress 资源对象是否存在。不存在则创建，存在则忽略。
   - 不包含指定 annotation，检查 ingress 资源是否存在。存在则删除，不存在则忽略。
 
 ## Lab
@@ -25,7 +26,9 @@ Controller 监听 Service 资源
 - 验证 Nginx Ingress Controller
 
 ```shell
-
+helm repo add stable https://mirror.azure.cn/kubernetes/charts/
+helm install nginx-ingress-controller --namespace kube-system stable/nginx-ingress # ingress controller安装在localhost的80和443端口
+kubectl --namespace kube-system get services -o wide -w nginx-ingress-controller-controller
 ```
 
 ### 通过 Go 进程运行
