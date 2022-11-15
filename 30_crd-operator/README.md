@@ -174,14 +174,17 @@ kubectl get crd1s
 
 - [code-generator](30_code-generator/README.md)
 
-### 基于sample controller的App
+### 基于 sample controller 样例的 App
 
-- [基于 sample controller 的 App](50_app/README.md)
+- [基于 sample controller 样例的 App](50_app/README.md)
 
 ### app-controller
 
-- [基于 sample controller 实现 App](55_app-controller/README.md)
+- [基于 sample controller 样例的 app-controller](55_app-controller/README.md)
 
+### kubebuilder
+
+- [kubebuilder](60_kubebuilder/README.md)
 
 ## Ref
 

@@ -1,10 +1,10 @@
 # kubebuilder
 
-kubebuilder 为 Operator 搭建好了基本的代码框架，生成了一堆文件，涵盖了自定义 controller 的代码和一个示例 CRD。
+kubebuilder 为创建一个 Operator 搭建好了基本的代码框架，生成了一堆文件，涵盖了自定义 controller 的代码和一个示例 CRD。
 
 ## controller-runtime
 
-controller-runtime 库包含若干 Go 库，用于快速构建
+controller-runtime 库包含若干 Go 库，用于快速构建：
 
 - controller-manager：
 - controller：
@@ -29,7 +29,7 @@ controller-runtime 由 Manager（等价于 k8s 的 controller-manager）串联�
 
 ### Controller
 
-Controller 可能会监控多种类型的对象（如 Pod + ReplicaSet + Deployment），但是 Controller 的 Reconciler 一般仅仅处理单一类型的对象。controller 从 Manager 得到各种共享对象，它自己创建一个工作队列。并从工作队列中获取 event，转给 Reconciler。
+Controller 会监控多种类型的对象（如 Pod + ReplicaSet + Deployment），但是 Controller 的 Reconciler 一般仅仅处理单一类型的对象。controller 从 Manager 得到各种共享对象，它自己创建一个工作队列，并从工作队列中获取 event，转给 Reconciler。
 
 当 A 类型的对象发生变化后，如果 B 类型的对象必须更新以响应，可以使用 EnqueueRequestFromMapFunc 来将一种类型的事件映射为另一种类型。如 Deployment 的 Controller 可以使用 EnqueueRequestForObject、EnqueueRequestForOwner 实现：
 
@@ -150,9 +150,9 @@ type XxxList struct {
 }
 ```
 
-##### 代码生成
+#### 自动生成 deepcopy
 
-添加完新资源后需要执行下面的命令，重新生成zz_generated.deepcopy.go文件，该文件包含了一系列和深拷贝有关的代码：
+添加完新资源后需要执行下面的命令，重新生成 zz_generated.deepcopy.go 文件，该文件包含了一系列和深拷贝有关的代码：
 
 ```
 make generate
@@ -164,7 +164,7 @@ make generate
 
 在 controller/kind/xx_controller.go 文件的 Reconcile() 中写入核心业务逻辑，然后可以运行 operator `make run`。
 
-### Scheme 注册
+### 注册 Scheme
 
 需要在 apis/v1/xxx_types.go 文件的 init() 方法中，将定义的资源、资源列表注册到 Scheme：
 
@@ -174,7 +174,7 @@ func init() {
 }
 ```
 
-### __internal 注册
+### 注册 __internal
 
 修改 apis/v1/groupversion_info.go，将资源注册到 __internal 版本：
 
@@ -198,7 +198,7 @@ ResourcesConfig: map[string]map[string]apiserver.ResourceConfig{
 }
 ```
 
-### 编写 Artifects/Manifests
+### 编写 CR
 
 需要根据 CRD 建立自己的 CR yaml 文件。
 
@@ -235,11 +235,11 @@ make install
 kubectl get crds
 ```
 
-- 在 controller/Reconcile() 中添加代码
+- 在 controller/Reconcile() 中添加业务代码
 ```go
-    _ = log.FromContext(ctx)
-	fmt.Println("XXXXXXXX app changed", "ns", req.Namespace)
-	return ctrl.Result{}, nil
+_ = log.FromContext(ctx)
+fmt.Println("XXXXXXXX app changed", "ns", req.Namespace)
+return ctrl.Result{}, nil
 ```
 
 - 运行 operator
@@ -263,7 +263,7 @@ make docker-push
 
 ### kubebuilder-at
 
-At 是个工具，用于在指定时间运行指定的命令，通过它的 schedule 和 command 2 个属性来设置。启动一个 称为 AT 的 CR，在 AT 中 schedule 配置的 UTC 时间、执行在 CR 中 command 配置的命令。整个执行过程（CR 的 status）分为 3 个阶段：pending、running、done。
+At 是个工具，用于在指定时间运行指定的命令，通过它的 schedule 和 command 2 个属性来设置。启动一个称为 AT 的 CR，在 AT 中 schedule 配置的 UTC 时间、执行在 CR 中 command 配置的命令。整个执行过程（CR 的 status）分为 3 个阶段：pending、running、done。
 
 - 创建脚手架
 
