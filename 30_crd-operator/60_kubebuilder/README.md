@@ -2,6 +2,8 @@
 
 kubebuilder 为创建一个 Operator 搭建好了基本的代码框架，生成了一堆文件，涵盖了自定义 controller 的代码和一个示例 CRD。
 
+在`Operator`模式下，用户只需要实现`Reconcile()`即 `sample-controller`中的`syncHandler`，其他步骤`kubebuilder`已经帮着实现了。
+
 ## controller-runtime
 
 controller-runtime 库包含若干 Go 库，用于快速构建：
@@ -114,6 +116,44 @@ Cache 实际是 client-go 中 Informer 的包装，为读客户端提供本地�
 
 
 
+## 架构
+
+kubebuilder 封装了 controller-runtime，在主文件中主要初始了`manager`，以及填充的`Reconciler`与`Webhook`，最后启动`manager`。
+
+### 初始化 manager
+
+在`New()`中主要初始化了各种配置端口、选主息信息、 `eventRecorder`，最重要的是初始了 Cluster。Cluster 包含 client 和 cache，用来访问 k8s 的 kube-apiserver。
+
+### 填充 Reconciler
+
+Reconcile 方法的触发是通过 Cache 中的 Informer 获取到资源的变更事件，然后再通过生产者消费者的模式触发自己填充的 Reconcile 方法的。
+
+### 初始化 Controller
+
+manager 中可以包含 1 个或多个 controller。初始化`Controller`调用`ctrl.NewControllerManagedBy`来创建`Builder`，通过 Build 方法完成初始化：
+
+- WithOptions()：填充配置项
+- For()：设置 reconcile 处理的资源
+- Owns()：设置监听的资源
+- Complete()：通过调用 Build() 函数来间接地调用：
+  - doController() 函数来初始化了一个 Controller，这里面传入了填充的 Reconciler 以及获取到的 GVK
+  - doWatch() 函数主要是监听想要的资源变化，`blder.ctrl.Watch(src, hdler, allPredicates...)` 通过过滤源事件的变化，`allPredicates`是过滤器，只有所有的过滤器都返回 true 时，才会将事件传递给 EventHandler，这里会将 Handler 注册到 Informer 上。
+
+
+### 启动 Manager
+
+主要流程包括：
+
+- serveMetrics()：启动监控服务
+- serveHealthProbes()：启动健康检查服务
+- startNonLeaderElectionRunnables()：
+  - waitForCache()：启动 cache
+  - startRunnable()：通过 Controller.Start() **正式启动 Controller**
+    - c.processNextWorkItem(ctx) --> processNextWorkItem() --> reconcileHandler() --> Do.Reconcile(ctx, req)
+- startLeaderElection()：启动选主服务
+
+
+
 
 
 ## 开发步骤
@@ -219,8 +259,8 @@ chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
 ```shell
 mkdir kubebuilder-demo & cd kubebuilder-demo
 kubebuilder init \
-	--domain wukong.com \
-	--repo github.com/rebirthmonkey/k8s-dev/kubebuilder-demo
+--domain wukong.com \
+--repo github.com/rebirthmonkey/k8s-dev/kubebuilder-demo
 ```
 
 - 创建 API：创建对应的 controller
@@ -270,17 +310,17 @@ At 是个工具，用于在指定时间运行指定的命令，通过它的 sche
 ```shell
 mkdir kubebuilder-at && cd kubebuilder-at
 kubebuilder init \
-	--domain wukong.com \
-  --repo github.com/rebirthmonkey/k8s-dev/kubebuilder-at
+--domain wukong.com \
+--repo github.com/rebirthmonkey/k8s-dev/kubebuilder-at
 ```
 
 - 创建 API/controller
 
 ```shell
 kubebuilder create api \
-              --group at \
-              --version v1 \
-              --kind At
+--group at \
+--version v1 \
+--kind At
 ```
 
 - 创建/安装 CRD

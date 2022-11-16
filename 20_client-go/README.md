@@ -2,7 +2,7 @@
 
 通常不会直接向 kube-apiserver 发请求，而是通过 client-go 提供的编程接口。client-go 提供了缓存功能，避免反复从 kube-apiserver 获取数据。k8s 的主要 Go 编程接口赖在 `k8s.io/client-go` 这个库，它是一个典型的 web 客户端库，可以用于调用对应的 k8s 集群对应的 API，实现常用的 REST 动作。
 
-## 客户端
+## Client
 
 client-go 支持 4 种客户端与 kube-apiserver 交互。
 
@@ -34,7 +34,7 @@ DynamicClient 的输入和输出都是 `*unstructred.Unstructured` 对象，它�
 
 DiscoveryClient 用于发现 kube-apiserver 所支持的 group、version 和 resource。`kubectl api-versions` 与 `kubectl api-resources` 命令通过 DiscoveryClient 实现，但它也是基于 RESTClient 的基础上封装的。
 
-## Informer 框架
+## Informer
 
 Informer 是基于 client-go 实现的 k8s 客户端程序（类似 controller）框架，它用于观察 kube-apiserver 中的某一种资源，并在发现资源发生变化时触发某些动作。
 
@@ -123,13 +123,13 @@ Informer 可以非常方便的动态获取各种资源的实时变化，开发�
 
 controller 可以对 k8s 的核心资源（如 pod、deployment）等进场操作，但也可以观察并操作用户自定义资源。k8s 自身提供了大量的 controller，并由 controller manager 统一管理。
 
-### Indexer
+一般而言，一个 controller 包含：
 
-Indexer 可以理解为 Etcd 的本地缓存，它是 client-go 用来存储 resource object 并自带 index 的本地存储，提供数据存储和数据索引功能。DeltaFIFO 通过 Processor 消费出来的 resource object 会存储在 Indexer。 Indexer 与 Etcd 中的数据保持完全一致，这样 client-go 可以很方便的从 Indexer 中读取相应 resource object 数据，而无需从远程的 Etcd 中读取，以减轻 kube-apiserver 的压力。
-
-其通过 DeltaFIFO 中最新的 Delta 不停的更新自身信息，同时需要在本地（DeltaFIFO、Indexer、Listener）之间执行同步，以上两个更新和同步的步骤都由 Reflector 的 ListAndWatch 来触发。同时在本地 crash，需要进行 replace 时，也需要查看到 Indexer 中当前存储的所有 key。
-
-ThreadSafeMap 是一个在内存中实现并发安全的 map，在每次增删改查操作时都会加锁，以保证数据的一致性。Indexer 在它之上做了封装，在每次增删改查 ThreadSafeMap 数据时，都会自动更新索引。
+- 一个 clientset：用于调用远程的 kube-apiserver
+- 一或多个 informer：每个 informer 监控一种资源
+- 一个 WorkQueue：用于异步接受 event
+- 一个 Indexer：用于本地缓存 Etcd 中资源的信息
+- 一个 Worker：真正的业务处理逻辑
 
 ### WorkQueue
 
@@ -156,7 +156,17 @@ Processor 中注册的 Handler 通过回调函数接收到对应的 event 之后
 - 计数器算法：
 - 混合模式：
 
+### Indexer
+
+Indexer 可以理解为 Etcd 的本地缓存，它是 client-go 用来存储 resource object 并自带 index 的本地存储，提供数据存储和数据索引功能。DeltaFIFO 通过 Processor 消费出来的 resource object 会存储在 Indexer。 Indexer 与 Etcd 中的数据保持完全一致，这样 client-go 可以很方便的从 Indexer 中读取相应 resource object 数据，而无需从远程的 Etcd 中读取，以减轻 kube-apiserver 的压力。
+
+其通过 DeltaFIFO 中最新的 Delta 不停的更新自身信息，同时需要在本地（DeltaFIFO、Indexer、Listener）之间执行同步，以上两个更新和同步的步骤都由 Reflector 的 ListAndWatch 来触发。同时在本地 crash，需要进行 replace 时，也需要查看到 Indexer 中当前存储的所有 key。
+
+ThreadSafeMap 是一个在内存中实现并发安全的 map，在每次增删改查操作时都会加锁，以保证数据的一致性。Indexer 在它之上做了封装，在每次增删改查 ThreadSafeMap 数据时，都会自动更新索引。
+
 ### Worker
+
+controller 的 Run() 函数通过 runWorker() 函数持续不断地执行 processWorkItem() 函数，最终的业务逻辑会在 syncHandler() 函数中实现。
 
 #### 控制循环
 
