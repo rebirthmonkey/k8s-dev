@@ -25,12 +25,6 @@ Controller 监听 Service 资源
 - 安装 Nginx Ingress Controller
 - 验证 Nginx Ingress Controller
 
-```shell
-helm repo add stable https://mirror.azure.cn/kubernetes/charts/
-helm install nginx-ingress-controller --namespace kube-system stable/nginx-ingress # ingress controller安装在localhost的80和443端口
-kubectl --namespace kube-system get services -o wide -w nginx-ingress-controller-controller
-```
-
 ### 通过 Go 进程运行
 
 - 启动 controller

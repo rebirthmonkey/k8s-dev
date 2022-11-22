@@ -152,10 +152,6 @@ manager 中可以包含 1 个或多个 controller。初始化`Controller`调用`
     - c.processNextWorkItem(ctx) --> processNextWorkItem() --> reconcileHandler() --> Do.Reconcile(ctx, req)
 - startLeaderElection()：启动选主服务
 
-
-
-
-
 ## 开发步骤
 
 以 xxx 为例。
@@ -164,9 +160,9 @@ manager 中可以包含 1 个或多个 controller。初始化`Controller`调用`
 
 添加 group name 和 version
 
-### 定义 struct
+### 定义 Type
 
-在 group/version/xx_types.go 文件中建立、更新 CRD 对应的 struct。通常至少需要定义 Xxx（资源名的驼峰式大小写）、XxxcList（表示资源的列表）两个结构，Xxx 结构至少包含 Spec、Status 两个额外字段，对应结构 XxxSpec、XxxStatus，分别代表规格（输入参数）和状态（当前状态）。此外，相关结构上必须提供必要的 kubebuilder 注解、所有字段都应该提供JSON tag（驼峰式大小写）：
+在 group/version/xx_types.go 文件中建立、更新 CRD 对应的 struct。通常至少需要定义 Xxx（资源名的驼峰式大小写）、XxxcList（表示资源的列表）两个结构，Xxx 结构至少包含 Spec、Status 两个额外字段，对应结构 XxxSpec、XxxStatus，分别代表规格（输入参数）和状态（当前状态）。此外，相关结构上必须提供必要的 kubebuilder 注解、所有字段都应该提供 JSON tag（驼峰式大小写）：
 
 ```go
 //+kubebuilder:object:root=true
@@ -200,7 +196,7 @@ make generate
 
 注意，每当修改资源的任何字段，该命令都需要再次执行。makefile 已经正确处理好依赖，所有依赖 generate 的目标都会自动调用它。
 
-### 编写业务逻辑
+### 填充 Reconcile 业务逻辑
 
 在 controller/kind/xx_controller.go 文件的 Reconcile() 中写入核心业务逻辑，然后可以运行 operator `make run`。
 
