@@ -4,8 +4,8 @@ import (
 	"math/rand"
 	"time"
 
-	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/controllers/dummy"
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/controllers/manager"
+	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/manager"
+	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/manager/reconcilers/dummy"
 )
 
 func main() {

@@ -1,17 +1,17 @@
 package registry
 
 import (
-	"github.com/rebirthmonkey/k8s-dev/pkg/manager"
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
 )
 
 var (
-	ReconcilersBuilder manager.ReconcilersBuilder
+	ReconcilersBuilder reconcilermgr.ReconcilersBuilder
 )
 
-func Register(funcs ...func(*manager.ReconcilerManager) error) {
+func Register(funcs ...func(*reconcilermgr.ReconcilerManager) error) {
 	ReconcilersBuilder.Register(funcs...)
 }
 
-func AddToManager(rmgr *manager.ReconcilerManager) {
+func AddToManager(rmgr *reconcilermgr.ReconcilerManager) {
 	ReconcilersBuilder.AddToManager(rmgr)
 }

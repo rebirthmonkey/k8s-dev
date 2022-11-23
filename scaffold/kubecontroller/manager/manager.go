@@ -3,11 +3,11 @@ package manager
 import (
 	"context"
 	"fmt"
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
 	"os"
 
 	"github.com/rebirthmonkey/k8s-dev/pkg/conf"
 	"github.com/rebirthmonkey/k8s-dev/pkg/controller/registry"
-	"github.com/rebirthmonkey/k8s-dev/pkg/manager"
 	"github.com/rebirthmonkey/k8s-dev/pkg/version"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -29,7 +29,7 @@ func init() {
 	utilruntime.Must(apis.AddToScheme(scheme))
 }
 
-func Main(opts Options, preStartHook func(context.Context, *manager.ReconcilerManager)) {
+func Main(opts Options, preStartHook func(context.Context, *reconcilermgr.ReconcilerManager)) {
 	apiServerURL := opts.APIServerURL
 	apiToken := opts.APIToken
 	apiextsURL := opts.APIExtsURL
@@ -58,7 +58,7 @@ func Main(opts Options, preStartHook func(context.Context, *manager.ReconcilerMa
 		os.Exit(1)
 	}
 	concurrence := conf.GetInt(conf.ReconcileConcurrence)
-	reconcilerMgr, err := manager.NewReconcilerManager(&manager.Config{
+	reconcilerMgr, err := reconcilermgr.NewReconcilerManager(&reconcilermgr.Config{
 		RestConfig:   restConfig,
 		Scheme:       scheme,
 		Concurrence:  concurrence,
@@ -83,7 +83,7 @@ func Main(opts Options, preStartHook func(context.Context, *manager.ReconcilerMa
 	if preStartHook != nil {
 		preStartHook(ctx, reconcilerMgr)
 	}
-	
+
 	if err := reconcilerMgr.Start(); err != nil {
 		setupLog.Error(err, "Error occurred while controller manager is running")
 	}

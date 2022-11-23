@@ -14,7 +14,7 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/client-go/util/jsonpath"
 
-	"github.com/rebirthmonkey/k8s-dev/pkg/utils"
+	"github.com/rebirthmonkey/k8s-dev/pkg/util"
 )
 
 const (
@@ -135,7 +135,7 @@ func NewFromTableConfig(t TableConfig) TableConvertorBuilder {
 				hc := 0
 				str, ok := cell.(string)
 				if ok {
-					hc = utils.HanCount(str)
+					hc = util.HanCount(str)
 				}
 				hanCount = append(hanCount, hc)
 			}
@@ -149,14 +149,14 @@ func NewFromTableConfig(t TableConfig) TableConvertorBuilder {
 		var colMaxHanCounts []int
 		for c := 0; c < cols; c++ {
 			colMaxHanCount := 0
-			headHanCount := utils.HanCount(table.ColumnDefinitions[c].Name)
+			headHanCount := util.HanCount(table.ColumnDefinitions[c].Name)
 			if headHanCount > colMaxHanCount {
 				colMaxHanCount = headHanCount
 			}
 			for r := 0; r < rows; r++ {
 				str, ok := table.Rows[r].Cells[c].(string)
 				if ok {
-					hanCount := utils.HanCount(str)
+					hanCount := util.HanCount(str)
 					if hanCount > colMaxHanCount {
 						colMaxHanCount = hanCount
 					}
@@ -167,7 +167,7 @@ func NewFromTableConfig(t TableConfig) TableConvertorBuilder {
 		for c := 0; c < cols; c++ {
 			colMaxHanCount := colMaxHanCounts[c]
 			colHeader := table.ColumnDefinitions[c].Name
-			headHanCount := utils.HanCount(colHeader)
+			headHanCount := util.HanCount(colHeader)
 			padding := colMaxHanCount - headHanCount
 			const hanPadding = "　"
 			if padding > 0 {
@@ -176,7 +176,7 @@ func NewFromTableConfig(t TableConfig) TableConvertorBuilder {
 			for r := 0; r < rows; r++ {
 				str, ok := table.Rows[r].Cells[c].(string)
 				if ok {
-					hanCount := utils.HanCount(str)
+					hanCount := util.HanCount(str)
 					padding := colMaxHanCount - hanCount
 					if padding > 0 {
 						table.Rows[r].Cells[c] = fmt.Sprintf("%s%s", str, strings.Repeat(hanPadding, padding))

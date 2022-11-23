@@ -2,6 +2,7 @@ package dummy
 
 import (
 	"context"
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
 	"time"
 
 	uberzap "go.uber.org/zap"
@@ -13,15 +14,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/rebirthmonkey/k8s-dev/pkg/controller/registry"
 	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
 	appv1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/app/v1"
-	//kcctrl "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/controller"
-	"github.com/rebirthmonkey/k8s-dev/pkg/controller/registry"
-	"github.com/rebirthmonkey/k8s-dev/pkg/manager"
 )
 
 func init() {
-	registry.Register(func(manager *manager.ReconcilerManager) error {
+	registry.Register(func(manager *reconcilermgr.ReconcilerManager) error {
 		manager.With(&Reconciler{
 			Client:      manager.GetClient(),
 			ZapOpts:     manager.GetLogOptions(),

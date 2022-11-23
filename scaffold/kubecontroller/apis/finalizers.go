@@ -6,7 +6,7 @@ import (
 	"github.com/thoas/go-funk"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/rebirthmonkey/k8s-dev/pkg/utils"
+	"github.com/rebirthmonkey/k8s-dev/pkg/util"
 )
 
 func RemoveFinalizer(obj client.Object, finalizer string) {
@@ -32,7 +32,7 @@ func AddFinalizer(obj client.Object, finalizers ...string) {
 }
 
 func EqualFinalizers(obj client.Object, finalizers []string) bool {
-	return utils.ArrayEqual(obj.GetFinalizers(), finalizers)
+	return util.ArrayEqual(obj.GetFinalizers(), finalizers)
 }
 
 func GetFinalizers(obj client.Object) (res []string) {
