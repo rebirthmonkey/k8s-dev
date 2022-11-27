@@ -16,7 +16,7 @@ kubebuilder 依赖于 controller-runtime 库，使用 controller-runtime 的 Cli
 
 ### Manager
 
-controller-runtime 由 Manager（等价于 k8s 的 controller-manager）串联起来，用于启动（Manager.Start） controller，管理被多个 controller 共享的依赖，例如 Cache、Client、Scheme。通过 manager.Manager 来创建 client.Client，SDK 生成的代码中包含创建 Manager 的逻辑，Manager 持有一个 Cache 和一个 Client。
+controller-runtime 由 Manager（等价于 k8s 的 controller-manager）串联起来，用于启动（Manager.Start） controller，并且管理被多个 controller 共享的依赖（Cache、Client、Scheme）。manager.Manager 会创建 client.Client，SDK 生成的代码中包含创建 Manager 的逻辑，Manager 持有一个 Cache 和一个 Client。
 
 <img src="figures/image-20220608172034690.png" alt="image-20220608172034690" style="zoom:50%;" />
 
@@ -44,13 +44,13 @@ reconcile.Request 入队时会自动去重，也就是说一个 ReplicaSet 创�
 
 #### Reconciler
 
-Reconciler 是 Controller 的核心逻辑所在，它负责调和使 status 逼近期望状态 spec。例如，当针对 ReplicaSet 对象调用 Reconciler 时，发现 ReplicaSet 要求 5 实例，但是当前系统中只有 3 个 Pod。这时 Reconciler 应该创建额外的两个 Pod，并且将这些 Pod 的 OwnerReference 指向前面的 ReplicaSet。
+Reconciler 是 Controller 的核心逻辑所在，它负责调和使 status 逼近期望状态 spec。例如，当针对 ReplicaSet 对象调用 Reconciler 时，发现 ReplicaSet 要求 5 实例，但是当前系统中只有 3 个 Pod。这时 Reconciler 应该创建额外的两个 Pod，并且将这些 Pod 的 OwnerReference（被管理的组件）指向前面的 ReplicaSet。
 
 Reconciler 通常仅处理一种类型的对象，OwnerReference 用于从子对象（如 Pod）触发父对象的调和（如 ReplicaSet）操作。
 
 ##### SetupWithManager()
 
-Controller 还应该实现一个 SetupWithManager(mgr ctrl.Manager) 方法，此方法将本 controller 注册给 controller-manager：
+Controller 还应该实现一个 SetupWithManager(mgr ctrl.Manager) 方法，此方法将本 controller 注册给 Manager：
 
 ```go
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -116,43 +116,7 @@ Cache 实际是 client-go 中 Informer 的包装，为读客户端提供本地�
 
 
 
-## 架构
-
-kubebuilder 封装了 controller-runtime，在主文件中主要初始了`manager`，以及填充的`Reconciler`与`Webhook`，最后启动`manager`。
-
-### 初始化 manager
-
-在`New()`中主要初始化了各种配置端口、选主息信息、 `eventRecorder`，最重要的是初始了 Cluster。Cluster 包含 client 和 cache，用来访问 k8s 的 kube-apiserver。
-
-### 填充 Reconciler
-
-Reconcile 方法的触发是通过 Cache 中的 Informer 获取到资源的变更事件，然后再通过生产者消费者的模式触发自己填充的 Reconcile 方法的。
-
-### 初始化 Controller
-
-manager 中可以包含 1 个或多个 controller。初始化`Controller`调用`ctrl.NewControllerManagedBy`来创建`Builder`，通过 Build 方法完成初始化：
-
-- WithOptions()：填充配置项
-- For()：设置 reconcile 处理的资源
-- Owns()：设置监听的资源
-- Complete()：通过调用 Build() 函数来间接地调用：
-  - doController() 函数来初始化了一个 Controller，这里面传入了填充的 Reconciler 以及获取到的 GVK
-  - doWatch() 函数主要是监听想要的资源变化，`blder.ctrl.Watch(src, hdler, allPredicates...)` 通过过滤源事件的变化，`allPredicates`是过滤器，只有所有的过滤器都返回 true 时，才会将事件传递给 EventHandler，这里会将 Handler 注册到 Informer 上。
-
-
-### 启动 Manager
-
-主要流程包括：
-
-- serveMetrics()：启动监控服务
-- serveHealthProbes()：启动健康检查服务
-- startNonLeaderElectionRunnables()：
-  - waitForCache()：启动 cache
-  - startRunnable()：通过 Controller.Start() **正式启动 Controller**
-    - c.processNextWorkItem(ctx) --> processNextWorkItem() --> reconcileHandler() --> Do.Reconcile(ctx, req)
-- startLeaderElection()：启动选主服务
-
-## 开发步骤
+## 开发/运行
 
 以 xxx 为例。
 
@@ -161,6 +125,8 @@ manager 中可以包含 1 个或多个 controller。初始化`Controller`调用`
 添加 group name 和 version
 
 ### 定义 Type
+
+#### 定义 Go Type
 
 在 group/version/xx_types.go 文件中建立、更新 CRD 对应的 struct。通常至少需要定义 Xxx（资源名的驼峰式大小写）、XxxcList（表示资源的列表）两个结构，Xxx 结构至少包含 Spec、Status 两个额外字段，对应结构 XxxSpec、XxxStatus，分别代表规格（输入参数）和状态（当前状态）。此外，相关结构上必须提供必要的 kubebuilder 注解、所有字段都应该提供 JSON tag（驼峰式大小写）：
 
@@ -196,23 +162,25 @@ make generate
 
 注意，每当修改资源的任何字段，该命令都需要再次执行。makefile 已经正确处理好依赖，所有依赖 generate 的目标都会自动调用它。
 
-### 填充 Reconcile 业务逻辑
+#### 注册 Scheme
 
-在 controller/kind/xx_controller.go 文件的 Reconcile() 中写入核心业务逻辑，然后可以运行 operator `make run`。
-
-### 注册 Scheme
-
-需要在 apis/v1/xxx_types.go 文件的 init() 方法中，将定义的资源、资源列表注册到 Scheme：
+需要在 apis/v1/xxx_types.go 文件的 init() 方法中，将定义的资源、资源列表注册到 Scheme 中的 GVK 中：
 
 ```go
 func init() {
-  SchemeBuilder.Register(&Xxxx{}, &XxxList{})
+  SchemeBuilder.Register(&Xxx{}, &XxxList{})
 }
 ```
 
-### 注册 __internal
+同时，在 main() 中真正执行 `AddToScheme()` 将 Xxx Type 添加到 Scheme 中。
 
-修改 apis/v1/groupversion_info.go，将资源注册到 __internal 版本：
+```go
+utilruntime.Must(xxxv1.AddToScheme(scheme))
+```
+
+#### 注册 __internal
+
+如需要 internal 版本，修改 apis/v1/groupversion_info.go，将资源注册到 __internal 版本：
 
 ```go
 SchemeBuilderInternal = runtime.NewSchemeBuilder(func(s *runtime.Scheme) error {
@@ -221,20 +189,85 @@ SchemeBuilderInternal = runtime.NewSchemeBuilder(func(s *runtime.Scheme) error {
 })
 ```
 
-### 资源生命周期回调函数注册
+### 定义 Controller
 
-修改 cmd/apiserver/main.go 中的 ResourcesConfig，为资源注册生命周期回调函数：
+#### 填充 Reconcile()
+
+在 controller/kind/xx_controller.go 文件的 Reconcile() 中写入核心业务逻辑，然后可以运行 operator `make run`。
+
+Reconcile() 的触发是通过 Cache 中的 Informer 获取到资源的变更事件，然后再通过生产者消费者的模式触发自己填充的 Reconcile 方法的。
+
+### 管理 Manager
+
+kubebuilder 封装了 controller-runtime，在主文件中主要初始了`manager`，以及填充的`Reconciler`与`Webhook`，最后启动`manager`。
+
+#### 创建 Manager
+
+在`NewManager()`中主要初始化了各种配置：
+
+- Scheme：
+- Port：
+- MetricsBindAddress：
+- HealthProbBindAddress：
+- LeaderElection：ture、false
+- LeaderElectionID：
+
+#### 创建 Controller
+
+创建一个 Xxx 的 Controller，其中：
+
+- Scheme：为整个 Manager 统一的 Scheme
+- client：为整个 Manager 共享的 client
 
 ```go
-ResourcesConfig: map[string]map[string]apiserver.ResourceConfig{
-  apiv1.ResourceMovetovpcs: {
-    NewFunc: func() runtime.Object { return &apiv1.Xxx{} },  // 创建资源对象的回调
-    NewListFunc: func() runtime.Object { return &apiv1.XxxList{} },  // 创建资源对象列表的回调
-  },
+if err = (&controllers.XxxReconciler{
+   Client: mgr.GetClient(),
+   Scheme: mgr.GetScheme(),
+})
+```
+
+#### 添加 Controller 到 Manager
+
+SetupWithManager() 把创建的 Controller 添加到 Manager 中
+
+```go
+Xxx.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "At")
+		os.Exit(1)
 }
 ```
 
-### 编写 CR
+其背后实际的工作是：
+
+- NewControllerManagedBy()：基于现有的 Manager 创建一个空壳的 Controller
+- For()：让该 Controller 监听指定的 Go Type
+- Complete()：为空壳 Controller 添加创建的 Controller/Reconciler
+
+```go
+ctrl.NewControllerManagedBy(mgr).
+		For(&xxxv1.Xxx{}).
+		Complete(r)
+```
+
+
+
+#### 启动 Manager
+
+```go
+err := mgr.Start(ctrl.SetupSignalHandler())
+```
+
+其内部主要流程包括：
+
+- serveMetrics()：启动监控服务
+- serveHealthProbes()：启动健康检查服务
+- startNonLeaderElectionRunnables()：
+  - waitForCache()：启动 cache
+  - startRunnable()：通过 Controller.Start() **正式启动 Controller**
+    - c.processNextWorkItem(ctx) --> processNextWorkItem() --> reconcileHandler() --> Do.Reconcile(ctx, req)
+- startLeaderElection()：启动选主服务
+
+### 定义 CR
 
 需要根据 CRD 建立自己的 CR yaml 文件。
 

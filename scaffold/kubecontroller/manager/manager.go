@@ -1,24 +1,16 @@
 package manager
 
 import (
-	"context"
 	"fmt"
+	"github.com/rebirthmonkey/go/pkg/log"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
-	"os"
-
-	"github.com/rebirthmonkey/k8s-dev/pkg/conf"
-	"github.com/rebirthmonkey/k8s-dev/pkg/controller/registry"
 	"github.com/rebirthmonkey/k8s-dev/pkg/version"
+	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
+	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/manager/reconcilers/at"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
-	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/app/v1"
+	"os"
 )
 
 var (
@@ -26,65 +18,60 @@ var (
 )
 
 func init() {
-	utilruntime.Must(apis.AddToScheme(scheme))
+	utilruntime.Must(demov1.AddToScheme(scheme))
+	//+kubebuilder:scaffold:scheme
 }
 
-func Main(opts Options, preStartHook func(context.Context, *reconcilermgr.ReconcilerManager)) {
-	apiServerURL := opts.APIServerURL
-	apiToken := opts.APIToken
-	apiextsURL := opts.APIExtsURL
-	portable := opts.Portable
-	zapOptions := opts.ZapOptions
-	setupLog := opts.Logger
+type Manager struct {
+	ReconcilerMgr *reconcilermgr.ReconcilerManager
+}
 
-	ctx := ctrl.SetupSignalHandler()
+type PreparedManager struct {
+	PreparedReconcilerMgr *reconcilermgr.PreparedReconcilerManager
+}
 
-	setupLog.Info(fmt.Sprintf("Kubecontroller version: %s", version.Info()))
-	var err error
+func NewManager(opts *Options) (*Manager, error) {
+	log.Info(fmt.Sprintf("Kubecontroller version: %s", version.Info()))
 
-	var restConfig *rest.Config
-	if apiServerURL == "" {
-		restConfig, err = config.GetConfig()
-		if err != nil {
-			setupLog.Error(err, "Failed to load config, if you are debugging locally, provide --kubeconfig or --apiserver-url flags")
-			os.Exit(1)
-		}
-	} else {
-		restConfig, err = clientcmd.BuildConfigFromFlags(apiServerURL, "")
-		restConfig.BearerToken = apiToken
+	config := NewConfig()
+	if err := opts.ApplyTo(config); err != nil {
+		return nil, err
 	}
+
+	mgrInstance, err := config.Complete().New()
 	if err != nil {
-		setupLog.Error(err, "Failed to build rest.Config")
-		os.Exit(1)
-	}
-	concurrence := conf.GetInt(conf.ReconcileConcurrence)
-	reconcilerMgr, err := reconcilermgr.NewReconcilerManager(&reconcilermgr.Config{
-		RestConfig:   restConfig,
-		Scheme:       scheme,
-		Concurrence:  concurrence,
-		Context:      ctx,
-		Portable:     portable,
-		ZapOptions:   zapOptions,
-		APIServerUrl: apiServerURL,
-		APIExtsURL:   apiextsURL,
-		APIToken:     apiToken,
-	})
-	if err != nil {
-		os.Exit(1)
+		return nil, err
 	}
 
-	registry.AddToManager(reconcilerMgr)
+	return mgrInstance, nil
+}
 
-	if err := reconcilerMgr.Setup(); err != nil {
-		setupLog.Error(err, "Failed to setup reconcilers")
+// PrepareRun creates a running manager instance after complete initialization.
+func (mgr *Manager) PrepareRun() *PreparedManager {
+	log.Info("[Manager] PrepareRun")
+
+	preparedManager := &PreparedManager{
+		PreparedReconcilerMgr: mgr.ReconcilerMgr.PrepareRun(scheme),
+	}
+
+	if err := (&at.AtReconciler{
+		Client: mgr.ReconcilerMgr.Mgr.GetClient(),
+		Scheme: mgr.ReconcilerMgr.Mgr.GetScheme(),
+	}).SetupWithManager(mgr.ReconcilerMgr.Mgr); err != nil {
+		log.Error("unable to create controller AT")
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	if preStartHook != nil {
-		preStartHook(ctx, reconcilerMgr)
+	return preparedManager
+}
+
+func (mgr *PreparedManager) Run() error {
+	log.Info("[PreparedManager] Run")
+
+	if err := mgr.Run(); err != nil {
+		log.Error("Error occurred while controller manager is running")
 	}
 
-	if err := reconcilerMgr.Start(); err != nil {
-		setupLog.Error(err, "Error occurred while controller manager is running")
-	}
+	return nil
 }
