@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: ats.at.wukong.com
+  name: ats.demo.wukong.com
 spec:
-  group: at.wukong.com
+  group: demo.wukong.com
   names:
     kind: At
     listKind: AtList

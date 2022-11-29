@@ -54,6 +54,8 @@ func (mgr *Manager) PrepareRun() *PreparedManager {
 		PreparedReconcilerMgr: mgr.ReconcilerMgr.PrepareRun(scheme),
 	}
 
+	_ = demov1.AddToScheme(mgr.ReconcilerMgr.Mgr.GetScheme())
+
 	if err := (&at.AtReconciler{
 		Client: mgr.ReconcilerMgr.Mgr.GetClient(),
 		Scheme: mgr.ReconcilerMgr.Mgr.GetScheme(),
@@ -69,7 +71,7 @@ func (mgr *Manager) PrepareRun() *PreparedManager {
 func (mgr *PreparedManager) Run() error {
 	log.Info("[PreparedManager] Run")
 
-	if err := mgr.Run(); err != nil {
+	if err := mgr.PreparedReconcilerMgr.Run(); err != nil {
 		log.Error("Error occurred while controller manager is running")
 	}
 

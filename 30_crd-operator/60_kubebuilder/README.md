@@ -347,29 +347,37 @@ kubebuilder init \
 
 ```shell
 kubebuilder create api \
---group at \
+--group demo \
 --version v1 \
 --kind At
 ```
 
-- 创建/安装 CRD
+- 定义 API：在 `api/v1/at_types.go` 文件中定义 Go Type
+- 创建 CRD：CRD 将会在 `config/crd/bases` 中创建
 
 ```shell
-make install
+make fanifests
 ```
 
-- 运行 Operator
+- 安装 CRD
 
 ```shell
-make run
+kubectl apply -f config/crd/bases/demo_v1_at.yaml
 ```
 
+- 创建 CR：内容更新到 `config/samples` 中
 - 添加 CR Yaml
 
 ```shell
 kubectl apply -f config/samples/at_v1_at.yaml
-kubectl delete -f config/samples/cnat_v1alpha1_at.yaml
-make uninstall
+```
+
+- 编写 controller：`controllers/at_controller.go` 中添加逻辑代码
+
+- 运行 operator
+
+```shell
+go run main.go
 ```
 
 - 容器镜像打包
@@ -423,7 +431,7 @@ make
 - 启动 operator
 
 ```shell
-make run
+go run main.go
 ```
 
 - 创建 CR：内容改为

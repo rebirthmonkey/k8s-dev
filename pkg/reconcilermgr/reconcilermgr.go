@@ -7,7 +7,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crmgr "sigs.k8s.io/controller-runtime/pkg/manager"
-	"time"
 )
 
 type ReconcilerManager struct {
@@ -52,12 +51,11 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 }
 
 func (rmgr *PreparedReconcilerManager) Run() error {
-	log.Info("Starting controller manager")
+	log.Info("[PreparedReconcilerManager] Run")
 	if err := rmgr.ReconcilerManager.Mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		log.Error("problem running manager")
 		os.Exit(1)
 	}
 
-	time.Sleep(99999)
 	return nil
 }
