@@ -24,11 +24,11 @@ func init() {
 }
 
 type Manager struct {
-	ReconcilerMgr *reconcilermgr.ReconcilerManager
+	*reconcilermgr.ReconcilerManager
 }
 
 type PreparedManager struct {
-	PreparedReconcilerMgr *reconcilermgr.PreparedReconcilerManager
+	*reconcilermgr.PreparedReconcilerManager
 }
 
 func NewManager(opts *Options) (*Manager, error) {
@@ -51,7 +51,7 @@ func NewManager(opts *Options) (*Manager, error) {
 func (mgr *Manager) PrepareRun() *PreparedManager {
 	log.Info("[Manager] PrepareRun")
 
-	preparedRMgr := mgr.ReconcilerMgr.PrepareRun(scheme)
+	preparedRMgr := mgr.ReconcilerManager.PrepareRun(scheme)
 
 	_ = demov1.AddToScheme(preparedRMgr.Mgr.GetScheme())
 
@@ -74,14 +74,14 @@ func (mgr *Manager) PrepareRun() *PreparedManager {
 	}
 
 	return &PreparedManager{
-		PreparedReconcilerMgr: preparedRMgr,
+		PreparedReconcilerManager: preparedRMgr,
 	}
 }
 
 func (mgr *PreparedManager) Run() error {
 	log.Info("[PreparedManager] Run")
 
-	if err := mgr.PreparedReconcilerMgr.Run(); err != nil {
+	if err := mgr.PreparedReconcilerManager.Run(); err != nil {
 		log.Error("Error occurred while controller manager is running")
 	}
 

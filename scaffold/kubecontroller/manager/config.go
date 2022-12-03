@@ -58,7 +58,7 @@ func (c *CompletedConfig) New() (*Manager, error) {
 	}
 
 	mgr := &Manager{
-		ReconcilerMgr: rmgr,
+		ReconcilerManager: rmgr,
 	}
 
 	return mgr, nil
