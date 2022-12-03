@@ -35,7 +35,7 @@ version:
 ## run: Run the whole application.
 .PHONY: run
 run:
-	@$(MAKE) go.run
+	@$(MAKE) go.run.manager
 
 .PHONY: run.%
 run.%:

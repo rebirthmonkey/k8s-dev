@@ -4,4 +4,4 @@ metadata:
   name: dummy-demo
 spec:
   data: "xxx"
-  transitionDefer: 10
+  transitionDefer: 3

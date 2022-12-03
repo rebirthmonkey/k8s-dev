@@ -29,7 +29,8 @@ endif
 .PHONY: go.run.%
 go.run.%:
 	@echo "===========> Running $*"
-	@$(GO) run cmd/$*/main.go
+	@$(GO) run cmd/$*/main.go -c configs/kubecontroller.yaml
+
 
 .PHONY: go.run
 go.run:

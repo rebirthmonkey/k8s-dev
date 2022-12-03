@@ -21,55 +21,12 @@ import (
 	"time"
 
 	"github.com/rebirthmonkey/go/pkg/log"
-	corev1 "k8s.io/api/core/v1"
+	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
 )
-
-// Add creates a new At Controller and adds it to the Manager with default RBAC. The Manager will set fields on the Controller
-// and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
-}
-
-// newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &DummyReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()}
-}
-
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	// Create a new controller
-	c, err := controller.New("at-controller", mgr, controller.Options{Reconciler: r})
-	if err != nil {
-		return err
-	}
-
-	// Watch for changes to At
-	err = c.Watch(&source.Kind{Type: &demov1.At{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return err
-	}
-
-	// Watch pods created by At
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &demov1.At{},
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 var _ reconcile.Reconciler = &DummyReconciler{}
 
@@ -86,17 +43,28 @@ type DummyReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *DummyReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	logger := log.WithValues("namespace", request.Namespace, "dummy", request.Name)
+	logger := log.WithValues("dummy", request.Name)
 	logger.Info("=== Reconciling Dummy")
 
 	dummy := &demov1.Dummy{}
-	r.Client.Get(ctx, request.NamespacedName, dummy)
-	time.Sleep(time.Second * time.Duration(dummy.Spec.TransitionDefer))
-	dummy.Status.Data = dummy.Spec.Data
-	err := r.Client.Status().Update(ctx, dummy)
+	err := r.Client.Get(ctx, request.NamespacedName, dummy)
+	if err != nil {
+		logger.Errorf("%s", err)
+		return reconcile.Result{}, err
+	}
 
-	// Don't requeue. We should be reconcile because either the pod or the CR changes.
-	return reconcile.Result{}, err
+	logger.Infof("=== Sleep %d seconds", dummy.Spec.TransitionDefer)
+	time.Sleep(time.Second * time.Duration(dummy.Spec.TransitionDefer))
+
+	logger.Infof("=== Update data to %s", dummy.Spec.Data)
+	dummy.Status.Data = dummy.Spec.Data
+	err = r.Client.Status().Update(ctx, dummy)
+	if err != nil {
+		logger.Errorf("%s", err)
+		return reconcile.Result{}, err
+	}
+
+	return reconcile.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
