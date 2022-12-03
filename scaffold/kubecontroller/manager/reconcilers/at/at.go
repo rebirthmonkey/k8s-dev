@@ -111,14 +111,14 @@ func (r *AtReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctr
 			return reconcile.Result{}, nil
 		}
 	case demov1.AtPhaseDone:
-		logger.Infof("=== Phase: DONE")
+		logger.Info("=== Phase: DONE")
 		return reconcile.Result{}, nil
 	default:
 		logger.Info("=== Phase: NOP")
 		return reconcile.Result{}, nil
 	}
 
-	// Update the At at, setting the status to the respective phase:
+	// Update the at, setting the status to the respective phase
 	err = r.Status().Update(context.TODO(), at)
 	if err != nil {
 		return reconcile.Result{}, err
