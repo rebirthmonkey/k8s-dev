@@ -20,13 +20,23 @@ controller-gen object paths=./apis/xxx/v1/
 
 ### 编写 Reconciler
 
-在 `manager/reconcilers/dummy/dummy.go` 文件内编写 reconcile() 的逻辑
+在 `manager/reconcilers/xxx/xxx.go` 文件内编写 reconcile() 的逻辑
 
-### 创建 cmd
+### 在 `manager/manager.go` 中添加对应代码：
 
-在 `cmd/dummy/main.go` 文件内编写启动
+```go
+if err := (&xxx.XxxReconciler{
+	Client: preparedReconcilerMgr.GetClient(),
+	Scheme: preparedReconcilerMgr.GetScheme(),
+}).SetupWithManager(preparedReconcilerMgr.Manager); err != nil {
+    log.Error("unable to create controller Xxx")
+    fmt.Println(err)
+    os.Exit(1)
+}
+```
 
 ### 创建 manifests
+
 
 
 

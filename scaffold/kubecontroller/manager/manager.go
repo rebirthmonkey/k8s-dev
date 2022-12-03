@@ -51,30 +51,28 @@ func NewManager(opts *Options) (*Manager, error) {
 func (mgr *Manager) PrepareRun() *PreparedManager {
 	log.Info("[Manager] PrepareRun")
 
-	preparedRMgr := mgr.ReconcilerManager.PrepareRun(scheme)
-
-	_ = demov1.AddToScheme(preparedRMgr.Mgr.GetScheme())
+	preparedReconcilerMgr := mgr.ReconcilerManager.PrepareRun(scheme)
 
 	if err := (&at.AtReconciler{
-		Client: preparedRMgr.Mgr.GetClient(),
-		Scheme: preparedRMgr.Mgr.GetScheme(),
-	}).SetupWithManager(preparedRMgr.Mgr); err != nil {
+		Client: preparedReconcilerMgr.GetClient(),
+		Scheme: preparedReconcilerMgr.GetScheme(),
+	}).SetupWithManager(preparedReconcilerMgr.Manager); err != nil {
 		log.Error("unable to create controller AT")
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	if err := (&dummy.DummyReconciler{
-		Client: preparedRMgr.Mgr.GetClient(),
-		Scheme: preparedRMgr.Mgr.GetScheme(),
-	}).SetupWithManager(preparedRMgr.Mgr); err != nil {
+		Client: preparedReconcilerMgr.GetClient(),
+		Scheme: preparedReconcilerMgr.GetScheme(),
+	}).SetupWithManager(preparedReconcilerMgr.Manager); err != nil {
 		log.Error("unable to create controller Dummy")
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	return &PreparedManager{
-		PreparedReconcilerManager: preparedRMgr,
+		PreparedReconcilerManager: preparedReconcilerMgr,
 	}
 }
 

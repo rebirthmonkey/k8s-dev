@@ -20,9 +20,9 @@ type ReconcilerManager struct {
 }
 
 type PreparedReconcilerManager struct {
-	Mgr crmgr.Manager
+	crmgr.Manager
 	client.Client
-	Scheme *runtime.Scheme
+	//Scheme *runtime.Scheme
 
 	*ReconcilerManager
 }
@@ -31,6 +31,7 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 	log.Info("[ReconcilerManager] PrepareRun")
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:                 scheme,
 		MetricsBindAddress:     ":8001",
 		Port:                   9443,
 		HealthProbeBindAddress: ":8002",
@@ -43,8 +44,8 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 	}
 
 	return &PreparedReconcilerManager{
-		Mgr:               mgr,
-		Scheme:            scheme,
+		Manager: mgr,
+		//Scheme:            scheme,
 		Client:            mgr.GetClient(),
 		ReconcilerManager: rmgr,
 	}
@@ -52,7 +53,8 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 
 func (rmgr *PreparedReconcilerManager) Run() error {
 	log.Info("[PreparedReconcilerManager] Run")
-	if err := rmgr.Mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+
+	if err := rmgr.Manager.Start(ctrl.SetupSignalHandler()); err != nil {
 		log.Error("problem running manager")
 		os.Exit(1)
 	}
