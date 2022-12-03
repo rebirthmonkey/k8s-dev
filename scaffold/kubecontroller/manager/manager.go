@@ -6,6 +6,7 @@ import (
 
 	"github.com/rebirthmonkey/go/pkg/log"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
@@ -19,6 +20,7 @@ var (
 )
 
 func init() {
+	utilruntime.Must(corev1.AddToScheme(scheme)) // because we will use Pod.
 	utilruntime.Must(demov1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }

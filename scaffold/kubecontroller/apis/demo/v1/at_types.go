@@ -24,9 +24,9 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 const (
-	PhasePending = "PENDING"
-	PhaseRunning = "RUNNING"
-	PhaseDone    = "DONE"
+	AtPhasePending = "PENDING"
+	AtPhaseRunning = "RUNNING"
+	AtPhaseDone    = "DONE"
 )
 
 // AtSpec defines the desired state of At
