@@ -11,6 +11,7 @@ import (
 
 	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
 	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/manager/reconcilers/at"
+	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/manager/reconcilers/dummy"
 )
 
 var (
@@ -50,22 +51,31 @@ func NewManager(opts *Options) (*Manager, error) {
 func (mgr *Manager) PrepareRun() *PreparedManager {
 	log.Info("[Manager] PrepareRun")
 
-	preparedManager := &PreparedManager{
-		PreparedReconcilerMgr: mgr.ReconcilerMgr.PrepareRun(scheme),
-	}
+	preparedRMgr := mgr.ReconcilerMgr.PrepareRun(scheme)
 
-	_ = demov1.AddToScheme(mgr.ReconcilerMgr.Mgr.GetScheme())
+	_ = demov1.AddToScheme(preparedRMgr.Mgr.GetScheme())
 
 	if err := (&at.AtReconciler{
-		Client: mgr.ReconcilerMgr.Mgr.GetClient(),
-		Scheme: mgr.ReconcilerMgr.Mgr.GetScheme(),
-	}).SetupWithManager(mgr.ReconcilerMgr.Mgr); err != nil {
+		Client: preparedRMgr.Mgr.GetClient(),
+		Scheme: preparedRMgr.Mgr.GetScheme(),
+	}).SetupWithManager(preparedRMgr.Mgr); err != nil {
 		log.Error("unable to create controller AT")
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	return preparedManager
+	if err := (&dummy.DummyReconciler{
+		Client: preparedRMgr.Mgr.GetClient(),
+		Scheme: preparedRMgr.Mgr.GetScheme(),
+	}).SetupWithManager(preparedRMgr.Mgr); err != nil {
+		log.Error("unable to create controller Dummy")
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	return &PreparedManager{
+		PreparedReconcilerMgr: preparedRMgr,
+	}
 }
 
 func (mgr *PreparedManager) Run() error {

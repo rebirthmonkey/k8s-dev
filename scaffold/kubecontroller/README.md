@@ -12,12 +12,23 @@ controller-gen -h
 
 ### 生成 Go Type
 
-- 创建 `xxx_type.go` 文件，并定义 `xxx` 与 `xxxList` 结构体
+- 创建 `xxx_type.go` 文件，并定义 `xxx` 与 `xxxList` 结构体，并且 register 该结构体
 - 构建 DeepCopy
 ```shell
-controller-gen object paths=./apis/xxx/v1/xxx_types.go
-controller-gen object paths=./apis/demo/v1/dummy_types.go
+controller-gen object paths=./apis/xxx/v1/
 ```
+
+### 编写 Reconciler
+
+在 `manager/reconcilers/dummy/dummy.go` 文件内编写 reconcile() 的逻辑
+
+### 创建 cmd
+
+在 `cmd/dummy/main.go` 文件内编写启动
+
+### 创建 manifests
+
+
 
 
 

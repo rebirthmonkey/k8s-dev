@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
-  name: dummies.app.wukong.com
+  name: dummies.demo.wukong.com
 spec:
-  group: app.wukong.com
+  group: demo.wukong.com
   names:
     kind: Dummy
     listKind: DummyList

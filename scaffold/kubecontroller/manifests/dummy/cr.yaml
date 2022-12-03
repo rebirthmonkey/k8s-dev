@@ -1,4 +1,4 @@
-apiVersion: app.wukong.com/v1
+apiVersion: demo.wukong.com/v1
 kind: Dummy
 metadata:
   name: dummy-demo

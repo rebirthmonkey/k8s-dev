@@ -1,17 +1,16 @@
 package reconcilermgr
 
 import (
+	"os"
+
 	"github.com/rebirthmonkey/go/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
-	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crmgr "sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ReconcilerManager struct {
-	Mgr crmgr.Manager
-
 	Concurrence    int
 	Portable       bool
 	APIServerURL   string
@@ -21,6 +20,7 @@ type ReconcilerManager struct {
 }
 
 type PreparedReconcilerManager struct {
+	Mgr crmgr.Manager
 	client.Client
 	Scheme *runtime.Scheme
 
@@ -41,9 +41,9 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 		log.Error("unable to start manager")
 		os.Exit(1)
 	}
-	rmgr.Mgr = mgr
 
 	return &PreparedReconcilerManager{
+		Mgr:               mgr,
 		Scheme:            scheme,
 		Client:            mgr.GetClient(),
 		ReconcilerManager: rmgr,
@@ -52,7 +52,7 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 
 func (rmgr *PreparedReconcilerManager) Run() error {
 	log.Info("[PreparedReconcilerManager] Run")
-	if err := rmgr.ReconcilerManager.Mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := rmgr.Mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		log.Error("problem running manager")
 		os.Exit(1)
 	}
