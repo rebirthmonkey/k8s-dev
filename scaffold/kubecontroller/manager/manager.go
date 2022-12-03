@@ -2,15 +2,15 @@ package manager
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/rebirthmonkey/go/pkg/log"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
-	"github.com/rebirthmonkey/k8s-dev/pkg/version"
-	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/manager/reconcilers/at"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"os"
+
+	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
+	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/manager/reconcilers/at"
 )
 
 var (
@@ -31,7 +31,7 @@ type PreparedManager struct {
 }
 
 func NewManager(opts *Options) (*Manager, error) {
-	log.Info(fmt.Sprintf("Kubecontroller version: %s", version.Info()))
+	log.Info("[Manager] New")
 
 	config := NewConfig()
 	if err := opts.ApplyTo(config); err != nil {

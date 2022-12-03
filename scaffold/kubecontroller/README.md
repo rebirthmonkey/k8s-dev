@@ -1,6 +1,23 @@
 # kubecontroller脚手架
 
+## Install
 
+- controller-gen：
+```shell
+go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+controller-gen -h 
+```
+
+## Development
+
+### 生成 Go Type
+
+- 创建 `xxx_type.go` 文件，并定义 `xxx` 与 `xxxList` 结构体
+- 构建 DeepCopy
+```shell
+controller-gen object paths=./apis/xxx/v1/xxx_types.go
+controller-gen object paths=./apis/demo/v1/dummy_types.go
+```
 
 
 

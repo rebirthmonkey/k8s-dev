@@ -12,6 +12,4 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	manager.NewApp("kubecontroller").Run()
-	//opts := manager.ParseOptionsFromFlags(false)
-	//manager.Main(opts, nil)
 }

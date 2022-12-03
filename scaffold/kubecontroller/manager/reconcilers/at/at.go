@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rebirthmonkey/go/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,15 +33,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	atv1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
 )
-
-var log = logf.Log.WithName("controller")
 
 // Add creates a new At Controller and adds it to the Manager with default RBAC. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -118,20 +116,20 @@ func (r *AtReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctr
 	case atv1.PhasePending:
 		reqLogger.Info("Phase: PENDING")
 		// As long as we haven't executed the command yet, we need to check if it's time already to act:
-		reqLogger.Info("Checking schedule", "Target", instance.Spec.Schedule)
+		reqLogger.Infof("Checking schedule", "Target", instance.Spec.Schedule)
 		// Check if it's already time to execute the command with a tolerance of 2 seconds:
 		d, err := timeUntilSchedule(instance.Spec.Schedule)
 		if err != nil {
-			reqLogger.Error(err, "Schedule parsing failure")
+			reqLogger.Errorf("Schedule parsing failure", err)
 			// Error reading the schedule. Wait until it is fixed.
 			return reconcile.Result{}, err
 		}
-		reqLogger.Info("Schedule parsing done", "Result", fmt.Sprintf("diff=%v", d))
+		reqLogger.Infof("Schedule parsing done", "Result", fmt.Sprintf("diff=%v", d))
 		if d > 0 {
 			// Not yet time to execute the command, wait until the scheduled time
 			return reconcile.Result{RequeueAfter: d}, nil
 		}
-		reqLogger.Info("It's time!", "Ready to execute", instance.Spec.Command)
+		reqLogger.Infof("It's time!", "Ready to execute", instance.Spec.Command)
 		instance.Status.Phase = atv1.PhaseRunning
 	case atv1.PhaseRunning:
 		reqLogger.Info("Phase: RUNNING")
@@ -151,19 +149,19 @@ func (r *AtReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctr
 				// requeue with error
 				return reconcile.Result{}, err
 			}
-			reqLogger.Info("Pod launched", "name", pod.Name)
+			reqLogger.Infof("Pod launched", "name", pod.Name)
 		} else if err != nil {
 			// requeue with error
 			return reconcile.Result{}, err
 		} else if found.Status.Phase == corev1.PodFailed || found.Status.Phase == corev1.PodSucceeded {
-			reqLogger.Info("Container terminated", "reason", found.Status.Reason, "message", found.Status.Message)
+			reqLogger.Infof("Container terminated", "reason", found.Status.Reason, "message", found.Status.Message)
 			instance.Status.Phase = atv1.PhaseDone
 		} else {
 			// don't requeue because it will happen automatically when the pod status changes
 			return reconcile.Result{}, nil
 		}
 	case atv1.PhaseDone:
-		reqLogger.Info("Phase: DONE")
+		reqLogger.Infof("Phase: DONE")
 		return reconcile.Result{}, nil
 	default:
 		reqLogger.Info("NOP")

@@ -21,15 +21,12 @@ func NewApp(basename string) *app.App {
 // run launches the App object.
 func run(opts *Options) app.RunFunc {
 	return func(basename string) error {
-		log.Info("xxxxxxxx")
+		log.Info("[App] Run")
 		manager, err := NewManager(opts)
 		if err != nil {
 			return err
 		}
 
 		return manager.PrepareRun().Run()
-		//opts := ParseOptionsFromFlags(false)
-		//Main(opts, nil)
-		//return nil
 	}
 }
