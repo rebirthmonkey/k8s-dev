@@ -1,11 +1,11 @@
 package manager
 
 import (
+	"sync"
+
 	cliflag "github.com/marmotedu/component-base/pkg/cli/flag"
 	"github.com/rebirthmonkey/go/pkg/log"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
-
-	"sync"
 )
 
 type Options struct {

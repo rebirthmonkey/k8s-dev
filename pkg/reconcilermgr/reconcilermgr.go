@@ -11,19 +11,19 @@ import (
 )
 
 type ReconcilerManager struct {
-	Concurrence    int
-	Portable       bool
-	APIServerURL   string
-	APIExtsEnabled bool
-	APIExtsURL     string
-	APIToken       string
+	MetricsBindAddress     string
+	HealthProbeBindAddress string
+	Concurrence            int
+	Portable               bool
+	APIServerURL           string
+	APIExtsEnabled         bool
+	APIExtsURL             string
+	APIToken               string
 }
 
 type PreparedReconcilerManager struct {
 	crmgr.Manager
 	client.Client
-	//Scheme *runtime.Scheme
-
 	*ReconcilerManager
 }
 
@@ -31,12 +31,12 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 	log.Info("[ReconcilerManager] PrepareRun")
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     ":8001",
-		Port:                   9443,
-		HealthProbeBindAddress: ":8002",
-		LeaderElection:         false,
-		LeaderElectionID:       "465bd3f6.wukong.com",
+		Scheme: scheme,
+		//MetricsBindAddress:     ":8001",
+		//HealthProbeBindAddress: ":8002",
+		Port:             9443,
+		LeaderElection:   false,
+		LeaderElectionID: "465bd3f6.wukong.com",
 	})
 	if err != nil {
 		log.Error("unable to start manager")
@@ -44,8 +44,7 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 	}
 
 	return &PreparedReconcilerManager{
-		Manager: mgr,
-		//Scheme:            scheme,
+		Manager:           mgr,
 		Client:            mgr.GetClient(),
 		ReconcilerManager: rmgr,
 	}

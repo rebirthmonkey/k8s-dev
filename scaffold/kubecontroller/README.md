@@ -41,7 +41,6 @@ if err := (&xxx.XxxReconciler{
 
 
 
-
 ## Tmp
 
 manager 中可以包含 1 个或多个 controller。初始化`Controller`调用`ctrl.NewControllerManagedBy`来创建`Builder`，通过 Build 方法完成初始化：

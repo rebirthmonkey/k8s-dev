@@ -5,24 +5,29 @@ import (
 )
 
 type Options struct {
-	APIServerURL   string `json:"apiserver-url"       mapstructure:"apiserver-url"`
-	APIExtsEnabled bool   `json:"apiexts-enabled"       mapstructure:"apiexts-enabled"`
-	APIExtsURL     string `json:"apiexts-url"       mapstructure:"apiexts-url"`
-	APIExtsPort    int    `json:"apiexts-port"       mapstructure:"apiexts-port"`
-	APIToken       string `json:"api-token"       mapstructure:"api-token"`
-	Portable       bool   `json:"portable"       mapstructure:"portable"`
+	MetricsBindAddress     string `json:"metrics-bind-address"       mapstructure:"metrics-bind-address"`
+	HealthProbeBindAddress string `json:"health-probe-bind-address"       mapstructure:"health-probe-bind-address"`
+	Concurrence            int    `json:"concurrence"       mapstructure:"concurrence"`
+	APIServerURL           string `json:"apiserver-url"       mapstructure:"apiserver-url"`
+	APIExtsEnabled         bool   `json:"apiexts-enabled"       mapstructure:"apiexts-enabled"`
+	APIExtsURL             string `json:"apiexts-url"       mapstructure:"apiexts-url"`
+	APIExtsPort            int    `json:"apiexts-port"       mapstructure:"apiexts-port"`
+	APIToken               string `json:"api-token"       mapstructure:"api-token"`
+	Portable               bool   `json:"portable"       mapstructure:"portable"`
 }
 
 // NewOptions creates an Options object with default parameters.
 func NewOptions() *Options {
 	return &Options{
-		//ConfigPath:   "",
-		APIServerURL:   "",
-		APIExtsEnabled: false,
-		APIExtsURL:     "",
-		APIExtsPort:    0,
-		APIToken:       "",
-		Portable:       false,
+		MetricsBindAddress:     "",
+		HealthProbeBindAddress: "",
+		Concurrence:            0,
+		APIServerURL:           "",
+		APIExtsEnabled:         false,
+		APIExtsURL:             "",
+		APIExtsPort:            0,
+		APIToken:               "",
+		Portable:               false,
 	}
 }
 
@@ -34,6 +39,9 @@ func (o *Options) Validate() []error {
 }
 
 func (o *Options) ApplyTo(c *Config) error {
+	c.MetricsBindAddress = o.MetricsBindAddress
+	c.HealthProbeBindAddress = o.HealthProbeBindAddress
+	c.Concurrence = o.Concurrence
 	c.APIServerURL = o.APIServerURL
 	c.APIToken = o.APIToken
 	c.APIExtsEnabled = o.APIExtsEnabled

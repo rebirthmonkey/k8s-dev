@@ -1,13 +1,7 @@
 reconcilermgr:
   metrics-bind-address: ":18001"
   health-probe-bind-address: ":18002"
-  confirm-timeout: 1800s
-  reconcile-concurrence: 8
-  sync-period: 5m
-  retry-defer: 15s
-  confirm-defer: 15s
-  bearer-token: BpLnfgDsc2WD8F2qNfHK5a84
-  apiexts-url: http://127.0.0.1:6084
+  concurrence: 8
 
 log:
   name: apiserver # Logger的名字

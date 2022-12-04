@@ -61,13 +61,11 @@ func (r *AtReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctr
 		return reconcile.Result{}, err
 	}
 
-	// If no phase set, default to pending (the initial phase):
 	if at.Status.Phase == "" {
 		at.Status.Phase = demov1.AtPhasePending
 	}
 
-	// state machine: PENDING -> RUNNING -> DONE
-	switch at.Status.Phase {
+	switch at.Status.Phase { // state machine: PENDING -> RUNNING -> DONE
 	case demov1.AtPhasePending:
 		logger.Info("=== Phase: PENDING")
 
@@ -88,28 +86,32 @@ func (r *AtReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctr
 	case demov1.AtPhaseRunning:
 		logger.Info("=== Phase: RUNNING")
 		pod := newPodForCR(at)
-		// Set At at as the owner and controller
+		// Set at as the owner and controller
 		if err := controllerutil.SetControllerReference(at, pod, r.Scheme); err != nil {
 			return reconcile.Result{}, err // requeue with error
 		}
+
 		found := &corev1.Pod{}
 		err = r.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-		// Try to see if the pod already exists and if not
-		// (which we expect) then create a one-shot pod as per spec:
-		if err != nil && errors.IsNotFound(err) {
-			err = r.Create(context.TODO(), pod)
-			if err != nil {
-				return reconcile.Result{}, err
+		if err != nil {
+			if errors.IsNotFound(err) { // Try to see if the pod already exists
+				err2 := r.Create(context.TODO(), pod)
+				if err2 != nil {
+					return reconcile.Result{}, err2
+				}
+				logger.Infof("Pod %s launched", pod.Name)
 			}
-			logger.Infof("Pod %s launched", pod.Name)
-		} else if err != nil {
+			at.Status.Phase = demov1.AtPhaseDone
 			return reconcile.Result{}, err
-		} else if found.Status.Phase == corev1.PodFailed || found.Status.Phase == corev1.PodSucceeded {
+		}
+
+		if found.Status.Phase == corev1.PodFailed || found.Status.Phase == corev1.PodSucceeded {
 			logger.Infof("Container terminated with reason: %s, and message: %s", found.Status.Reason, found.Status.Message)
 			at.Status.Phase = demov1.AtPhaseDone
-		} else {
-			return reconcile.Result{}, nil
 		}
+
+		at.Status.Phase = demov1.AtPhaseDone
+		return reconcile.Result{}, nil
 	case demov1.AtPhaseDone:
 		logger.Info("=== Phase: DONE")
 		return reconcile.Result{}, nil
