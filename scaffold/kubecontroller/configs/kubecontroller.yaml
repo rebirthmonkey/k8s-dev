@@ -2,6 +2,7 @@ reconcilermgr:
   metrics-bind-address: ":18001"
   health-probe-bind-address: ":18002"
   concurrence: 8
+  apiserver-url: http://127.0.0.1:6084
 
 log:
   name: apiserver # Logger的名字

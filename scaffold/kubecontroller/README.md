@@ -15,7 +15,7 @@ controller-gen -h
 - 创建 `xxx_type.go` 文件，并定义 `xxx` 与 `xxxList` 结构体，并且 register 该结构体
 - 构建 DeepCopy
 ```shell
-controller-gen object paths=./apis/xxx/v1/
+bin/controller-gen object paths="./..."
 ```
 
 ### 编写 Reconciler
@@ -37,8 +37,12 @@ if err := (&xxx.XxxReconciler{
 
 ### 创建 manifests
 
+- 自动生成 CRD
+```shell
+controller-gen crd paths=./... output:crd:dir=manifests 
+```
 
-
+- 自定义 CR
 
 
 ## Tmp
