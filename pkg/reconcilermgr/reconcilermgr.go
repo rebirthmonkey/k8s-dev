@@ -5,6 +5,7 @@ import (
 
 	"github.com/rebirthmonkey/go/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crmgr "sigs.k8s.io/controller-runtime/pkg/manager"
@@ -15,6 +16,7 @@ type ReconcilerManager struct {
 	HealthProbeBindAddress string
 	Concurrence            int
 	APIServerURL           string
+	Kubeconfig             string
 }
 
 type PreparedReconcilerManager struct {
@@ -26,7 +28,14 @@ type PreparedReconcilerManager struct {
 func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedReconcilerManager {
 	log.Info("[ReconcilerManager] PrepareRun")
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	if rmgr.Kubeconfig == "" {
+		rmgr.Kubeconfig = clientcmd.RecommendedHomeFile
+	}
+
+	config, err := clientcmd.BuildConfigFromFlags("", rmgr.Kubeconfig)
+
+	mgr, err := ctrl.NewManager(config, ctrl.Options{
+		//mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:           scheme,
 		Port:             9443,
 		LeaderElection:   false,

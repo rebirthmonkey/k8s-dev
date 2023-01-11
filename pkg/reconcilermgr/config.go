@@ -5,6 +5,7 @@ type Config struct {
 	HealthProbeBindAddress string
 	Concurrence            int
 	APIServerURL           string
+	Kubeconfig             string
 }
 
 type CompletedConfig struct {
@@ -27,6 +28,7 @@ func (c CompletedConfig) New() (*ReconcilerManager, error) {
 		HealthProbeBindAddress: c.HealthProbeBindAddress,
 		Concurrence:            c.Concurrence,
 		APIServerURL:           c.APIServerURL,
+		Kubeconfig:             c.Kubeconfig,
 	}
 
 	return rmgr, nil

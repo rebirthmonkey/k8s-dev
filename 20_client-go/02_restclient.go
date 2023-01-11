@@ -14,6 +14,7 @@ func main() {
 
 	// config
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
+	//config, err := clientcmd.BuildConfigFromFlags("", "/tmp/cls-j7xitnn8-config")  // for the remote k8s cluster
 	if err != nil {
 		panic(err)
 	}
