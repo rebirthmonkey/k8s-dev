@@ -141,7 +141,7 @@ s.GenericAPIServer.InstallAPIGroup(&apiGroupInfo)
 
 ## Lab
 
-运行
+- 启动 APIServer：
 
 ```shell
 go run main.go \

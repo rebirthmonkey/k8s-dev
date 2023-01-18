@@ -1000,7 +1000,21 @@ func New(cfg Config) *Reconciler {
     }
 ```
 
-# 
+
+
+pm-shim 垫片 pgk/manager/phasemachine.go
+
+pm 主代码：pkg/pm/phasemachine.go
+
+branch pm-demo：
+
+- example：pkg/controllersredismigration/phasemachine_def.go
+
+手册：backedn-dev
+
+IDE 配置：
+
+- --zap-log-level=4 --config=config/teleport.yaml  --apiserver-url=http://127.0.0.1:6080
 
 
 
