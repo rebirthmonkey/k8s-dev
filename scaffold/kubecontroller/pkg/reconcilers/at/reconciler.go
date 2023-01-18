@@ -18,6 +18,7 @@ package at
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
 	"time"
 
@@ -29,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
@@ -44,6 +44,7 @@ func init() {
 	registry.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
 		rmgr.With(&Reconciler{
 			Client:      rmgr.GetClient(),
+			Scheme:      rmgr.GetScheme(),
 			Concurrence: rmgr.GetDefaultConcurrence(),
 		})
 		return nil

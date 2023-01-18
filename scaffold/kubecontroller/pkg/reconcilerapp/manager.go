@@ -1,7 +1,6 @@
 package reconcilerapp
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/rebirthmonkey/go/pkg/log"
@@ -11,7 +10,7 @@ import (
 
 	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
 	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilermgr"
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilers/at"
+	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/registry"
 )
 
 var (
@@ -54,14 +53,14 @@ func (mgr *Manager) PrepareRun() *PreparedManager {
 
 	preparedReconcilerMgr := mgr.ReconcilerManager.PrepareRun(scheme)
 
-	if err := (&at.Reconciler{
-		Client: preparedReconcilerMgr.GetClient(),
-		Scheme: preparedReconcilerMgr.GetScheme(),
-	}).SetupWithManager(preparedReconcilerMgr.Manager); err != nil {
-		log.Error("unable to create controller AT")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	//if err := (&at.Reconciler{
+	//	Client: preparedReconcilerMgr.GetClient(),
+	//	Scheme: preparedReconcilerMgr.GetScheme(),
+	//}).SetupWithManager(preparedReconcilerMgr.Manager); err != nil {
+	//	log.Error("unable to create controller AT")
+	//	fmt.Println(err)
+	//	os.Exit(1)
+	//}
 
 	//if err := (&dummy.DummyReconciler{
 	//	Client: preparedReconcilerMgr.GetClient(),
@@ -77,10 +76,16 @@ func (mgr *Manager) PrepareRun() *PreparedManager {
 	}
 }
 
-func (mgr *PreparedManager) Run() error {
+func (pmgr *PreparedManager) Run() error {
 	log.Info("[PreparedManager] Run")
 
-	if err := mgr.PreparedReconcilerManager.Run(); err != nil {
+	registry.AddToManager(pmgr.ReconcilerManager)
+	if err := pmgr.ReconcilerManager.Setup(); err != nil {
+		log.Errorf("Failed to setup reconcilers", err)
+		os.Exit(1)
+	}
+
+	if err := pmgr.PreparedReconcilerManager.Run(); err != nil {
 		log.Error("Error occurred while controller manager is running")
 	}
 

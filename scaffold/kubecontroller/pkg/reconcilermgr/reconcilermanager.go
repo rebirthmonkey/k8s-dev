@@ -26,8 +26,6 @@ type ReconcilerManager struct {
 }
 
 type PreparedReconcilerManager struct {
-	//mgr *crmgr.Manager
-
 	*ReconcilerManager
 }
 
@@ -78,6 +76,10 @@ func (rmgr *ReconcilerManager) GetDefaultConcurrence() int {
 
 func (rmgr *ReconcilerManager) GetClient() client.Client {
 	return rmgr.Client
+}
+
+func (rmgr *ReconcilerManager) GetScheme() *runtime.Scheme {
+	return rmgr.Manager.GetScheme()
 }
 
 func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedReconcilerManager {
