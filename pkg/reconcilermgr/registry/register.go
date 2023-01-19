@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilermgr"
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
 )
 
 var (

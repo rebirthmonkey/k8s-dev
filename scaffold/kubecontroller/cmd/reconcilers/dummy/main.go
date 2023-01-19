@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilerapp"
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilerapp"
 	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilers/dummy"
 )
 

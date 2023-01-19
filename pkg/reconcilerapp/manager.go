@@ -4,24 +4,15 @@ import (
 	"os"
 
 	"github.com/rebirthmonkey/go/pkg/log"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilermgr"
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/registry"
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 )
 
 var (
 	scheme = runtime.NewScheme()
 )
-
-func init() {
-	utilruntime.Must(corev1.AddToScheme(scheme)) // because we will use Pod.
-	utilruntime.Must(demov1.AddToScheme(scheme))
-	//+kubebuilder:scaffold:scheme
-}
 
 type Manager struct {
 	*reconcilermgr.ReconcilerManager

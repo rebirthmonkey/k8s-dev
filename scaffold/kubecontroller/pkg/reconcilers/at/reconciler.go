@@ -18,7 +18,6 @@ package at
 
 import (
 	"context"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
 	"time"
 
@@ -28,20 +27,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
 	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilermgr"
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/registry"
 )
 
 var _ reconcile.Reconciler = &Reconciler{}
 
 func init() {
 	registry.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
+		utilruntime.Must(corev1.AddToScheme(rmgr.GetScheme())) // because we will use Pod.
+		utilruntime.Must(demov1.AddToScheme(rmgr.GetScheme()))
 		rmgr.With(&Reconciler{
 			Client:      rmgr.GetClient(),
 			Scheme:      rmgr.GetScheme(),
