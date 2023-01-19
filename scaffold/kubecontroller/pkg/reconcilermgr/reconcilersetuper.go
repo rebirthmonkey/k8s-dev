@@ -1,6 +1,8 @@
 package reconcilermgr
 
-import ctrl "sigs.k8s.io/controller-runtime"
+import (
+	ctrl "sigs.k8s.io/controller-runtime"
+)
 
 type ReconcilerSetuper interface {
 	// SetupWithManager register the controller in manager

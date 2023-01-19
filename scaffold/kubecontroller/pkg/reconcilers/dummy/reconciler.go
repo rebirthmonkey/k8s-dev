@@ -21,19 +21,48 @@ import (
 	"time"
 
 	"github.com/rebirthmonkey/go/pkg/log"
-	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
+	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
+	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilermgr"
+	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/registry"
 )
 
-var _ reconcile.Reconciler = &DummyReconciler{}
+var _ reconcile.Reconciler = &Reconciler{}
 
-// DummyReconciler reconciles a At object
-type DummyReconciler struct {
+func init() {
+	registry.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
+		rmgr.With(&Reconciler{
+			Client: rmgr.GetClient(),
+			Scheme: rmgr.GetScheme(),
+		})
+		return nil
+	})
+}
+
+// Reconciler reconciles a Dummy object
+type Reconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	*runtime.Scheme
+
+	filter string
+}
+
+func (r *Reconciler) KeyFilter(filter string) {
+	r.filter = filter
+}
+
+func (r *Reconciler) For() string {
+	return apis.ResourceAts
+}
+
+func (r *Reconciler) AfterCacheSync(mgr ctrl.Manager) error {
+	// TODO initialization code to be executed after client cache synchronized
+	return nil
 }
 
 //+kubebuilder:rbac:groups=demo.wukong.com,resources=dummies,verbs=get;list;watch;create;update;patch;delete
@@ -42,7 +71,7 @@ type DummyReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *DummyReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	logger := log.WithValues("dummy", request.Name)
 	logger.Info("=== Reconciling Dummy")
 
@@ -68,7 +97,7 @@ func (r *DummyReconciler) Reconcile(ctx context.Context, request ctrl.Request) (
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *DummyReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&demov1.Dummy{}).
 		Complete(r)

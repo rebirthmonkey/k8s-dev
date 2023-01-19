@@ -1,7 +1,9 @@
 package reconcilermgr
 
 import (
+	"context"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	"github.com/rebirthmonkey/go/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +22,7 @@ type ReconcilerManager struct {
 
 	crmgr.Manager
 	client.Client
+	context.Context
 
 	setupers           []ReconcilerSetuper
 	enabledControllers []string
@@ -50,23 +53,18 @@ func (rmgr *ReconcilerManager) With(setupers ...ReconcilerSetuper) {
 func (rmgr *ReconcilerManager) Setup() error {
 	mgr := rmgr.Manager
 	for _, setuper := range rmgr.setupers {
-		//resourceFilterConfKey := fmt.Sprintf("resource-filter.%s", setuper.For())
-		//filter := conf.Get(resourceFilterConfKey)
-		//if filter != "" {
-		//	setuper.KeyFilter(filter)
-		//}
 		if err := setuper.SetupWithManager(mgr); err != nil {
 			return err
 		}
 	}
-	//if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-	//	rmgr.logger.Error(err, "unable to set up health check")
-	//	os.Exit(1)
-	//}
-	//if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-	//	rmgr.logger.Error(err, "unable to set up ready check")
-	//	os.Exit(1)
-	//}
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		log.Errorf("[ReconcilerManager] unable to set up health check", err)
+		os.Exit(1)
+	}
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		log.Errorf("[ReconcilerManager] unable to set up ready check", err)
+		os.Exit(1)
+	}
 	return nil
 }
 
@@ -76,6 +74,10 @@ func (rmgr *ReconcilerManager) GetDefaultConcurrence() int {
 
 func (rmgr *ReconcilerManager) GetClient() client.Client {
 	return rmgr.Client
+}
+
+func (rmgr *ReconcilerManager) GetContext() context.Context {
+	return rmgr.Context
 }
 
 func (rmgr *ReconcilerManager) GetScheme() *runtime.Scheme {
@@ -92,19 +94,19 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 	config, err := clientcmd.BuildConfigFromFlags("", rmgr.Kubeconfig)
 
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
-		//mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:           scheme,
 		Port:             9443,
 		LeaderElection:   false,
 		LeaderElectionID: "465bd3f6.wukong.com",
 	})
 	if err != nil {
-		log.Error("unable to start manager")
+		log.Error("[ReconcilerManager] unable to start manager")
 		os.Exit(1)
 	}
 
 	rmgr.Manager = mgr
 	rmgr.Client = mgr.GetClient()
+	rmgr.Context = ctrl.SetupSignalHandler()
 	return &PreparedReconcilerManager{
 		ReconcilerManager: rmgr,
 	}
@@ -113,7 +115,17 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 func (prmgr *PreparedReconcilerManager) Run() error {
 	log.Info("[PreparedReconcilerManager] Run")
 
-	if err := prmgr.Manager.Start(ctrl.SetupSignalHandler()); err != nil {
+	mgr := prmgr.Manager
+	go func() {
+		log.Info("[PreparedReconcilerManager] Wait until cache synchronized")
+		mgr.GetCache().WaitForCacheSync(prmgr.GetContext())
+		log.Info("[PreparedReconcilerManager] Cache synchronized, execute AfterCacheSync hook for all controllers")
+		for _, setuper := range prmgr.setupers {
+			setuper.AfterCacheSync(mgr)
+		}
+	}()
+
+	if err := prmgr.Manager.Start(prmgr.GetContext()); err != nil {
 		log.Error("problem running manager")
 		os.Exit(1)
 	}

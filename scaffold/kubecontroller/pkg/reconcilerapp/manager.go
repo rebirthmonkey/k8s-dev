@@ -53,24 +53,6 @@ func (mgr *Manager) PrepareRun() *PreparedManager {
 
 	preparedReconcilerMgr := mgr.ReconcilerManager.PrepareRun(scheme)
 
-	//if err := (&at.Reconciler{
-	//	Client: preparedReconcilerMgr.GetClient(),
-	//	Scheme: preparedReconcilerMgr.GetScheme(),
-	//}).SetupWithManager(preparedReconcilerMgr.Manager); err != nil {
-	//	log.Error("unable to create controller AT")
-	//	fmt.Println(err)
-	//	os.Exit(1)
-	//}
-
-	//if err := (&dummy.DummyReconciler{
-	//	Client: preparedReconcilerMgr.GetClient(),
-	//	Scheme: preparedReconcilerMgr.GetScheme(),
-	//}).SetupWithManager(preparedReconcilerMgr.Manager); err != nil {
-	//	log.Error("unable to create controller Dummy")
-	//	fmt.Println(err)
-	//	os.Exit(1)
-	//}
-
 	return &PreparedManager{
 		PreparedReconcilerManager: preparedReconcilerMgr,
 	}
@@ -81,12 +63,12 @@ func (pmgr *PreparedManager) Run() error {
 
 	registry.AddToManager(pmgr.ReconcilerManager)
 	if err := pmgr.ReconcilerManager.Setup(); err != nil {
-		log.Errorf("Failed to setup reconcilers", err)
+		log.Errorf("[PreparedManager] Failed to setup reconcilers", err)
 		os.Exit(1)
 	}
 
 	if err := pmgr.PreparedReconcilerManager.Run(); err != nil {
-		log.Error("Error occurred while controller manager is running")
+		log.Error("[PreparedManager] Error occurred while controller manager is running")
 	}
 
 	return nil
