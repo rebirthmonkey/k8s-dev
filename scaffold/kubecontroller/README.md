@@ -16,31 +16,29 @@
 
 ## 代码
 
-### 整体
+### ReconcilerApp
 
-#### entrepoint
+整个应用的接入点，可以封装多个 Manager，这里封装了 ReconcilerManager。它采用了 Option-Config-App 设计模式，同时也采用了 App-PreparedApp 设计模式。
 
-整个应用的接入点
-
-#### registry
-
-reconciler 结构体转换到 ReconcilerManager 的一层转换胶水。
+ReconcilerApp/Manager 用于封装任何类型的 Manager，这里封装了 ReconcilerManager。
 
 ### ReconcilerManager
 
 #### ReconcilerBuilder
 
-ReconcilerBuilder 的本质是回调函数列表，它采用了与 SchemeBuilder 相同的模式，先 Register() 一堆回调函数，然后通过 AddToManager() 执行所有回调函数。
+ReconcilerBuilder 的本质是用于初始化 Reconciler struct 的回调函数列表，它 SchemeBuilder 设计模式，先通过 registry.Register() 注册一堆用于初始化各种 API 资源的 Reconciler struct（通过回调函数），然后通过 register.AddToManager() 执行所有回调函数实现真正的 API 资源 Reconciler struct 初始化。
 
-- Register()：注册回调（callback）函数。可以注册若干回调函数，这些回调函数接受 ReconcilerManager 作为总调度器，并且为其添加 Reconciler struct。在 main() 中，以 `import _ .../reconcilers/xxx` ，通过 registry.Register() 转一道，自动将每个 reconciler 的 struct 以 Setuper 的形式（回调函数）安装到指定的 ReconcilerManager 的 ReconcilerBuilder（回调函数列表）中。
-- AddToManager()：执行所有回调函数。ReconcilerManager 的回调行为，要延迟到 AddToManager 的那一刻才执行。在 entrepoint.go 的 Main() 中，通过 registry.AddToManager() 转一道，再调用 ReconcilerBuilder.AddToManager() 执行。
+- Register()：注册回调（callback）函数。可以注册若干回调函数，这些回调函数接受 ReconcilerManager 作为总调度器，并且为其添加 Reconciler struct。在 main() 中，以 `import _ .../reconcilers/xxx` ，通过 registry.Register() 转一道，自动将每个 reconciler 的 struct 以 Setuper 的形式（回调函数）注册到指定的 ReconcilerManager 的 ReconcilerBuilder（回调函数列表）中。
+- AddToManager()：执行所有回调函数。ReconcilerManager 的回调行为要延迟到 AddToManager() 的那一刻才真正执行。在 ReconcilerApp.Manager.Run() 中，通过 registry.AddToManager() 转一道，再调用 ReconcilerBuilder.AddToManager() 执行。
+
+registry 是 Reconciler struct 转换到 ReconcilerManager 的一层转换胶水。
 
 #### ReconcilerSetuper
 
-ReconcilerSetuper  相当于规定了安装新的 Reconciler struct 到 RMgr 时的接口，其作用有 1/ 添加 Reconciler 到 RMgr 中进行缓存，2/ 在 RMgr 缓存同步后统一将 RMgr 的 Reconciler 们安装到 k8s 的 runtime-controller/Manager。
+ReconcilerSetuper 相当于规定了安装新的 Reconciler struct 到 RMgr 的接口，其作用有 1/ 添加 Reconciler 到 RMgr 中进行缓存，2/ 在 RMgr 缓存同步后统一将 RMgr 的 Reconciler 们安装到 k8s 的 runtime-controller/Manager。
 
 - With() 添加：将一个 ReconcilerSetuper 添加到 ReconcilerSetuper 列表中。
-- Setup() 启动：将 ReconcilerSetuper 列表中的每个  ReconcilerSetuper，通过 SetupWithManager(mgr) 正式安装到 RMgr 中。
+- Setup() 安装：将 ReconcilerSetuper 列表中的每个  ReconcilerSetuper，通过 SetupWithManager(mgr) 正式在 RMgr.Manager（k8s 原生的 runtime-controller/Manager） 中安装。
 
 #### ReconcilerManager
 
@@ -48,14 +46,45 @@ ReconcilerManager 封装了 k8s 原生的 runtime-controller/Manager。其 struc
 
 - 配置信息：
 - ReconcilerSetuper 列表：
-- k8s runtime-controller/manager：
+- k8s runtime-controller/Manager：
 - enabledControllers 列表：
 
 其具体操作包括：
 
-- With()：对应 ReconcilerSetuper 的 With()。
-- Setup()：对应 ReconcilerSetuper 的 Setup()。
-- Start()：启动整个 ReconcilerManager，通过 entrepoint 的 Main() 函数启动。
+- With()：对应 ReconcilerSetuper 的 With()，将一个 ReconcilerSetuper 添加到 ReconcilerSetuper 列表中 
+- Setup()：对应 ReconcilerSetuper 的 Setup()，正式安装 ReconcilerSetuper 列表中的所有 Setuper。
+- Run()：启动整个 ReconcilerManager，通过 k8s Manager 的 Start() 函数启动。
+
+ReconcilerManager 封装 k8s 原生 Manager的主要目的是：
+
+- 隐藏一些原生 Manager 的初始化的细节。
+- 提供了一种在缓存同步后，执行回调的机制。
+- 提供可以根据配置文件来启用、禁止某些 Reconciler 的机制。
+- 支持资源过滤，仅仅让 Reconciler 看到一部分资源。
+
+### apis/xxx_types.go
+
+用于定义各种 k8s 的 API 资源。
+
+#### ResourceMetadatas
+
+ResourceMetadatas 是为了兼容独立 APIServer 和 k8s crd 设置的元数据，后续 SDK 会自动生成 kubebuilder 注解，保证工具在 2 种部署方式下行为一致。
+
+### XxxReconciler
+
+基于 kubebuilder 原生的 Reconciler 基本一致，它主要包括 Reconciler struct。
+
+其具体操作包括：
+
+- init()：对应 ReconcilerApp 的
+- SetupWithManager()：将该 Reconciler（内部称为 Controller）添加到 Manager 中。
+- Reconciler()：循环处理的核心业务逻辑。
+
+
+
+### SDK
+
+
 
 ## 运行
 
