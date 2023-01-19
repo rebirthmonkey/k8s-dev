@@ -62,15 +62,17 @@ ReconcilerManager 封装 k8s 原生 Manager的主要目的是：
 - 提供可以根据配置文件来启用、禁止某些 Reconciler 的机制。
 - 支持资源过滤，仅仅让 Reconciler 看到一部分资源。
 
-### apis/xxx_types.go
+### 单个Reconciler
+
+#### apis/types.go
 
 用于定义各种 k8s 的 API 资源。
 
-#### ResourceMetadatas
+##### ResourceMetadatas
 
 ResourceMetadatas 是为了兼容独立 APIServer 和 k8s crd 设置的元数据，后续 SDK 会自动生成 kubebuilder 注解，保证工具在 2 种部署方式下行为一致。
 
-### XxxReconciler
+#### Reconciler
 
 基于 kubebuilder 原生的 Reconciler 基本一致，它主要包括 Reconciler struct。
 
@@ -80,7 +82,9 @@ ResourceMetadatas 是为了兼容独立 APIServer 和 k8s crd 设置的元数据
 - SetupWithManager()：将该 Reconciler（内部称为 Controller）添加到 Manager 中。
 - Reconciler()：循环处理的核心业务逻辑。
 
+#### ReconcilerHub
 
+用于一并启动所有的 Reconcilers。
 
 ### SDK
 
@@ -102,7 +106,7 @@ go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
 controller-gen -h 
 ```
 
-### 运行 manager
+### 运行单个 Reconciler
 
 - 配置 kind k8s 集群
 
@@ -123,19 +127,21 @@ CoreDNS is running at https://127.0.0.1:60004/api/v1/namespaces/kube-system/serv
 kubectl apply -f manifests/at/demo.wukong.com_ats.yaml
 ```
 
+- 启动 AT Reconciler
+
+```bash
+go run cmd/reconcilers/at/main.go -c configs/kubecontroller.yaml
+```
+
 - 验证 AT Reconciler
 
 ```bash
 kubectl apply -f manifests/at/cr.yaml
 ```
 
+### 运行 ReconcilerHub
 
-
-
-
-### 运行 reconciler-manager
-
-通过 reconciler-manager 运行所有的 reconciler。为了方便调试，采用 kind 启动 k8s 集群。
+通过 ReconcilerHub 运行所有的 Reconcilers。为了方便调试，采用 kind 启动 k8s 集群。
 
 - 配置 kind k8s 集群
 
@@ -153,40 +159,16 @@ CoreDNS is running at https://127.0.0.1:60004/api/v1/namespaces/kube-system/serv
 - 向集群注册 CRD
 
 ```bash
-kubectl apply -f chart/crds
+kubectl apply -f manifests/...
 ```
 
-- 写入系统初始化信息
+- 启动 ReconcilerHub：通过 ReconcilerHub 启动所有 Reconciler。
 
 ```bash
-kubectl apply -f initialization/catalogs
-kubectl apply -f initialization/binmetas
-kubectl apply -f initialization/teams
-kubectl apply -f initialization/users
+go run cmd/hub/main.go --config ./configs/kubecontroller.yaml
 ```
 
-- 启动 reconciler-manager：用去通过 reconciler-manager 启动所有 reconciler。同时，在 manager 中自带了 APIExtension 服务。
-
-```bash
-go run cmd/manager/main.go --config ./config/teleport.yaml --zap-log-level=4
-```
-
-- 启动 web backend
-
-```bash
-go run web/backend/main.go --user-config config/teleport-web.yaml
-```
-
-- 启动 web frontend：修改 proxy['/wapi'] 中的 target 到正确的地址，指向 127.0.0.1:6081。
-
-```bash
-npm install --registry=https://mirrors.tencent.com/npm/
-npm run dev
-```
-
-- 本地浏览器访问：`http://127.0.0.1:8000`，默认的用户名密码是 `admin:teleport`。
-
-### 运行单个 reconciler
+### 运行单个 PMReconciler
 
 以 redismigrations 为例： 
 
@@ -324,6 +306,29 @@ controller-gen crd paths=./... output:crd:dir=manifests
 
 
 ## Tmp
+
+### 运行单个 Reconciler
+
+- XXX 启动 web backend
+
+```bash
+go run web/backend/main.go --user-config config/teleport-web.yaml
+```
+
+- 启动 web frontend：修改 proxy['/wapi'] 中的 target 到正确的地址，指向 127.0.0.1:6081。
+
+```bash
+npm install --registry=https://mirrors.tencent.com/npm/
+npm run dev
+```
+
+- 本地浏览器访问：`http://127.0.0.1:8000`，默认的用户名密码是 `admin:teleport`。
+
+
+
+
+
+
 
 manager 中可以包含 1 个或多个 controller。初始化`Controller`调用`ctrl.NewControllerManagedBy`来创建`Builder`，通过 Build 方法完成初始化：
 
