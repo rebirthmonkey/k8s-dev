@@ -2,7 +2,7 @@
 
 kubebuilder 为创建一个 Operator 搭建好了基本的代码框架，生成了一堆文件，涵盖了自定义 controller 的代码和一个示例 CRD。
 
-在`Operator`模式下，用户只需要实现`Reconcile()`即 `sample-controller`中的`syncHandler`，其他步骤`kubebuilder`已经帮着实现了。
+在`Operator`模式下，用户只需要实现`Reconcile()`即 `sample-controller`中的`syncHandler`，其他步骤`kubebuilder`已经帮着实现了。【1】
 
 ## controller-runtime
 
@@ -450,3 +450,6 @@ spec:
 kubectl apply -f config/samples/at_v1_at.yaml
 ```
 
+## Ref
+
+1. [kubebuilder Book](https://book.kubebuilder.io/)
