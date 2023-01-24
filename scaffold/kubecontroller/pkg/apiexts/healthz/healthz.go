@@ -2,9 +2,11 @@ package healthz
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rebirthmonkey/k8s-dev/pkg/apiextmgr/registry"
-	"net/http"
+	"github.com/rebirthmonkey/k8s-dev/pkg/k8s/client"
 )
 
 func init() {
@@ -14,7 +16,7 @@ func init() {
 	})
 }
 
-func RegisterFunc(prefix string, ginEngine *gin.Engine) {
+func RegisterFunc(prefix string, ginEngine *gin.Engine, clients client.Clients) {
 	ginEngine.GET(fmt.Sprintf("%s/healthz", prefix), func(c *gin.Context) {
 		c.String(http.StatusOK, "Hello World")
 	})

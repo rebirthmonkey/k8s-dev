@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	amgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/apiextmgr/registry"
+	k8sclient "github.com/rebirthmonkey/k8s-dev/pkg/k8s/client"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
 	rmgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 )
@@ -77,7 +78,8 @@ func (pmgr *PreparedManager) Run() error {
 
 	if pmgr.APIServerEnabled {
 		eg.Go(func() error {
-			amgrregistry.AddToManager(pmgr.preparedGinServer)
+			k8scli := k8sclient.NewClientsManager(pmgr.GetScheme(), "", "")
+			amgrregistry.AddToManager(pmgr.preparedGinServer, k8scli)
 			if err := pmgr.preparedGinServer.Run(); err != nil {
 				log.Error("[PreparedManager] Error occurred while Gin server is running")
 				return err
