@@ -18,10 +18,10 @@ func init() {
 }
 
 func RegisterFunc(prefix string, ginEngine *gin.Engine, clients client.Clients) {
-	ginEngine.GET(fmt.Sprintf("%s/nss", prefix), getNamespacesHandler(clients))
+	ginEngine.GET(fmt.Sprintf("%s/nss", prefix), getNSsHandler(clients))
 }
 
-func getNamespacesHandler(clients client.Clients) gin.HandlerFunc {
+func getNSsHandler(clients client.Clients) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		namespaces := corev1.NamespaceList{}
 		cli := clients.KubeClient()
