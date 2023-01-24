@@ -8,7 +8,7 @@ type Options struct {
 	MetricsBindAddress     string `json:"metrics-bind-address"       mapstructure:"metrics-bind-address"`
 	HealthProbeBindAddress string `json:"health-probe-bind-address"       mapstructure:"health-probe-bind-address"`
 	Concurrence            int    `json:"concurrence"       mapstructure:"concurrence"`
-	APIServerURL           string `json:"apiserver-url"       mapstructure:"apiserver-url"`
+	APIServerEnabled       bool   `json:"apiserver-enabled"       mapstructure:"apiserver-enabled"`
 	Kubeconfig             string `json:"kubeconfig"       mapstructure:"kubeconfig"`
 }
 
@@ -18,7 +18,7 @@ func NewOptions() *Options {
 		MetricsBindAddress:     "",
 		HealthProbeBindAddress: "",
 		Concurrence:            0,
-		APIServerURL:           "",
+		APIServerEnabled:       false,
 		Kubeconfig:             "",
 	}
 }
@@ -34,13 +34,13 @@ func (o *Options) ApplyTo(c *Config) error {
 	c.MetricsBindAddress = o.MetricsBindAddress
 	c.HealthProbeBindAddress = o.HealthProbeBindAddress
 	c.Concurrence = o.Concurrence
-	c.APIServerURL = o.APIServerURL
+	c.APIServerEnabled = o.APIServerEnabled
 	c.Kubeconfig = o.Kubeconfig
 
 	return nil
 }
 
 func (o *Options) AddFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&o.APIServerURL, "apiserver-url", "", "APIServer url, assumes running in kubernetes cluster if empty")
+	fs.BoolVar(&o.APIServerEnabled, "apiserver-enabled", false, "APIServerEnabled, assumes running in kubernetes cluster if empty")
 	fs.StringVar(&o.Kubeconfig, "kubeconfig", "", "Kubeconfig, assumes running in kubernetes cluster if empty")
 }

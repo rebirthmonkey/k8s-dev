@@ -3,6 +3,7 @@ package reconcilerapp
 import (
 	"sync"
 
+	"github.com/rebirthmonkey/go/pkg/gin"
 	"github.com/rebirthmonkey/go/pkg/log"
 
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
@@ -11,11 +12,13 @@ import (
 type Config struct {
 	LogConfig           *log.Config
 	ReconcilermgrConfig *reconcilermgr.Config
+	GinConfig           *gin.Config
 }
 
 type CompletedConfig struct {
 	CompletedLogConfig           *log.CompletedConfig
 	CompletedReconcilermgrConfig *reconcilermgr.CompletedConfig
+	CompletedGinConfig           *gin.CompletedConfig
 }
 
 var (
@@ -29,6 +32,7 @@ func NewConfig() *Config {
 	return &Config{
 		LogConfig:           log.NewConfig(),
 		ReconcilermgrConfig: reconcilermgr.NewConfig(),
+		GinConfig:           gin.NewConfig(),
 	}
 }
 
@@ -39,6 +43,7 @@ func (c *Config) Complete() *CompletedConfig {
 		config = CompletedConfig{
 			CompletedLogConfig:           c.LogConfig.Complete(),
 			CompletedReconcilermgrConfig: c.ReconcilermgrConfig.Complete(),
+			CompletedGinConfig:           c.GinConfig.Complete(),
 		}
 	})
 
@@ -55,12 +60,19 @@ func (c *CompletedConfig) New() (*Manager, error) {
 
 	rmgr, err := c.CompletedReconcilermgrConfig.New()
 	if err != nil {
-		log.Fatalf("Failed to launch Log: %s", err.Error())
+		log.Fatalf("Failed to launch ReconcierManager: %s", err.Error())
+		return nil, err
+	}
+
+	ginServer, err := c.CompletedGinConfig.New()
+	if err != nil {
+		log.Fatalf("Failed to launch Gin server: %s", err.Error())
 		return nil, err
 	}
 
 	mgr := &Manager{
 		ReconcilerManager: rmgr,
+		ginServer:         ginServer,
 	}
 
 	return mgr, nil

@@ -17,7 +17,7 @@ type ReconcilerManager struct {
 	MetricsBindAddress     string
 	HealthProbeBindAddress string
 	Concurrence            int
-	APIServerURL           string
+	APIServerEnabled       bool
 	Kubeconfig             string
 
 	crmgr.Manager
@@ -117,9 +117,9 @@ func (prmgr *PreparedReconcilerManager) Run() error {
 
 	mgr := prmgr.Manager
 	go func() {
-		log.Info("[PreparedReconcilerManager] Wait until cache synchronized")
+		log.Info("[PreparedReconcilerManager] Wait cache synchronized")
 		mgr.GetCache().WaitForCacheSync(prmgr.GetContext())
-		log.Info("[PreparedReconcilerManager] Cache synchronized, execute AfterCacheSync hook for all controllers")
+		log.Info("[PreparedReconcilerManager] Execute AfterCacheSync for all reconcilers")
 		for _, setuper := range prmgr.setupers {
 			setuper.AfterCacheSync(mgr)
 		}

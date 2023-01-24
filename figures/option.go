@@ -46,7 +46,7 @@ func (o *Options) Validate() []error {
 
 func (o *Options) ApplyTo(c *reconcilermgr.Config) error {
 	c.ConfigPath = o.ConfigPath
-	c.APIServerURL = o.APIServerURL
+	c.APIServerEnabled = o.APIServerURL
 	c.APIToken = o.APIToken
 	c.APIExtsEnabled = o.APIExtsEnabled
 	c.APIExtsPort = o.APIExtsPort

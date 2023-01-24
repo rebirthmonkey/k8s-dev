@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilerapp"
-	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilers/at"
-	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilers/dummy"
+	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/apiexts/all"
+	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilers/all"
 )
 
 func main() {

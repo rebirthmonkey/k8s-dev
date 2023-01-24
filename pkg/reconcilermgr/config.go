@@ -4,7 +4,7 @@ type Config struct {
 	MetricsBindAddress     string
 	HealthProbeBindAddress string
 	Concurrence            int
-	APIServerURL           string
+	APIServerEnabled       bool
 	Kubeconfig             string
 }
 
@@ -27,7 +27,7 @@ func (c CompletedConfig) New() (*ReconcilerManager, error) {
 		MetricsBindAddress:     c.MetricsBindAddress,
 		HealthProbeBindAddress: c.HealthProbeBindAddress,
 		Concurrence:            c.Concurrence,
-		APIServerURL:           c.APIServerURL,
+		APIServerEnabled:       c.APIServerEnabled,
 		Kubeconfig:             c.Kubeconfig,
 	}
 

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	cliflag "github.com/marmotedu/component-base/pkg/cli/flag"
+	"github.com/rebirthmonkey/go/pkg/gin"
 	"github.com/rebirthmonkey/go/pkg/log"
 
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
@@ -12,6 +13,7 @@ import (
 type Options struct {
 	LogOptions           *log.Options           `json:"log"   mapstructure:"log"`
 	ReconcilermgrOptions *reconcilermgr.Options `json:"reconcilermgr"   mapstructure:"reconcilermgr"`
+	GinOptions           *gin.Options           `json:"gin"   mapstructure:"gin"`
 }
 
 var (
@@ -25,6 +27,7 @@ func NewOptions() *Options {
 		opt = Options{
 			LogOptions:           log.NewOptions(),
 			ReconcilermgrOptions: reconcilermgr.NewOptions(),
+			GinOptions:           gin.NewOptions(),
 		}
 	})
 
@@ -37,6 +40,7 @@ func (o *Options) Validate() []error {
 
 	errs = append(errs, o.LogOptions.Validate()...)
 	errs = append(errs, o.ReconcilermgrOptions.Validate()...)
+	errs = append(errs, o.GinOptions.Validate()...)
 
 	return errs
 }
@@ -51,11 +55,16 @@ func (o *Options) ApplyTo(c *Config) error {
 		log.Panic(err.Error())
 	}
 
+	if err := o.GinOptions.ApplyTo(c.GinConfig); err != nil {
+		log.Panic(err.Error())
+	}
+
 	return nil
 }
 
 // Flags returns flags for a specific APIServer by section name.
 func (o *Options) Flags() (fss cliflag.NamedFlagSets) {
+	o.GinOptions.AddFlags()
 	o.ReconcilermgrOptions.AddFlags(fss.FlagSet("reconcilermgr"))
 	o.LogOptions.AddFlags(fss.FlagSet("log"))
 
