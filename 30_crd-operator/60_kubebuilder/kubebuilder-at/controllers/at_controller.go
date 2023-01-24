@@ -42,8 +42,8 @@ import (
 
 var log = logf.Log.WithName("controller")
 
-// Add creates a new At Controller and adds it to the Manager with default RBAC. The Manager will set fields on the Controller
-// and Start it when the Manager is Started.
+// Add creates a new At Controller and adds it to the APIExtManager with default RBAC. The APIExtManager will set fields on the Controller
+// and Start it when the APIExtManager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
@@ -216,7 +216,7 @@ func timeUntilSchedule(schedule string) (time.Duration, error) {
 	return s.Sub(now), nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
+// SetupWithManager sets up the controller with the APIExtManager.
 func (r *AtReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&atv1.At{}).

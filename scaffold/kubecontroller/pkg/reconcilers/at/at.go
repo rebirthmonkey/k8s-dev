@@ -198,7 +198,7 @@ func timeUntilSchedule(schedule string) (time.Duration, error) {
 	return s.Sub(now), nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
+// SetupWithManager sets up the controller with the APIExtManager.
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&demov1.At{}).

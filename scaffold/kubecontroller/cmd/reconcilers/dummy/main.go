@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilerapp"
+	"github.com/rebirthmonkey/k8s-dev/pkg/kubecontroller"
 	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/apiexts/all"
 	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilers/dummy"
 )
@@ -12,5 +12,5 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	reconcilerapp.NewApp("kubecontroller").Run()
+	kubecontroller.NewApp("kubecontroller").Run()
 }

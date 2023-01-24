@@ -1,36 +1,35 @@
-package reconcilerapp
+package kubecontroller
 
 import (
-	"os"
-
-	"github.com/rebirthmonkey/go/pkg/gin"
 	"github.com/rebirthmonkey/go/pkg/log"
+	rmgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime"
+	"os"
 
+	"github.com/rebirthmonkey/k8s-dev/pkg/apiextmgr"
 	amgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/apiextmgr/registry"
 	k8sclient "github.com/rebirthmonkey/k8s-dev/pkg/k8s/client"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
-	rmgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 )
 
 var (
 	scheme = runtime.NewScheme()
 )
 
-type Manager struct {
+type KubeController struct {
 	*reconcilermgr.ReconcilerManager
-	ginServer *gin.Server
+	*apiextmgr.APIExtManager
 }
 
-type PreparedManager struct {
+type PreparedKubeController struct {
 	*reconcilermgr.PreparedReconcilerManager
-	*gin.PreparedServer
+	*apiextmgr.PreparedAPIExtManager
 	K8sclients k8sclient.Clients
 }
 
-func NewManager(opts *Options) (*Manager, error) {
-	log.Info("[Manager] New")
+func NewKubeController(opts *Options) (*KubeController, error) {
+	log.Info("[KubeController] New")
 
 	config := NewConfig()
 	if err := opts.ApplyTo(config); err != nil {
@@ -46,34 +45,34 @@ func NewManager(opts *Options) (*Manager, error) {
 }
 
 // PrepareRun creates a running manager instance after complete initialization.
-func (mgr *Manager) PrepareRun() *PreparedManager {
-	log.Info("[Manager] PrepareRun")
+func (mgr *KubeController) PrepareRun() *PreparedKubeController {
+	log.Info("[APIExtManager] PrepareRun")
 
 	preparedReconcilerMgr := mgr.ReconcilerManager.PrepareRun(scheme)
-	preparedGinServer := mgr.ginServer.PrepareRun()
+	preparedAPIExtMgr := mgr.APIExtManager.PrepareRun()
 	k8sclients := k8sclient.NewClientsManager(scheme, "", "")
 
-	return &PreparedManager{
+	return &PreparedKubeController{
 		PreparedReconcilerManager: preparedReconcilerMgr,
-		PreparedServer:            preparedGinServer,
+		PreparedAPIExtManager:     preparedAPIExtMgr,
 		K8sclients:                k8sclients,
 	}
 }
 
-func (pmgr *PreparedManager) Run() error {
-	log.Info("[PreparedManager] Run")
-
-	rmgrregistry.AddToManager(pmgr.ReconcilerManager)
-	if err := pmgr.ReconcilerManager.Setup(); err != nil {
-		log.Errorf("[PreparedManager] Failed to setup reconcilers", err)
-		os.Exit(1)
-	}
+func (pmgr *PreparedKubeController) Run() error {
+	log.Info("[PreparedAPIExtManager] Run")
 
 	var eg errgroup.Group
 
 	eg.Go(func() error {
+		rmgrregistry.AddToManager(pmgr.ReconcilerManager)
+		if err := pmgr.ReconcilerManager.Setup(); err != nil {
+			log.Errorf("[PreparedAPIExtManager] Failed to setup reconcilers", err)
+			os.Exit(1)
+		}
+
 		if err := pmgr.PreparedReconcilerManager.Run(); err != nil {
-			log.Error("[PreparedManager] Error occurred while controller manager is running")
+			log.Error("[PreparedAPIExtManager] Error occurred while controller manager is running")
 			return err
 		}
 		return nil
@@ -83,7 +82,7 @@ func (pmgr *PreparedManager) Run() error {
 		eg.Go(func() error {
 			amgrregistry.AddToManager(pmgr.PreparedServer, pmgr.K8sclients)
 			if err := pmgr.PreparedServer.Run(); err != nil {
-				log.Error("[PreparedManager] Error occurred while Gin server is running")
+				log.Error("[PreparedAPIExtManager] Error occurred while Gin server is running")
 				return err
 			}
 

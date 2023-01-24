@@ -1790,7 +1790,7 @@ func schema_pkg_apis_meta_v1_ManagedFieldsEntry(ref common.ReferenceCallback) co
 				Properties: map[string]spec.Schema{
 					"manager": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Manager is an identifier of the workflow managing these fields.",
+							Description: "APIExtManager is an identifier of the workflow managing these fields.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

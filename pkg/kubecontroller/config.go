@@ -1,24 +1,24 @@
-package reconcilerapp
+package kubecontroller
 
 import (
 	"sync"
 
-	"github.com/rebirthmonkey/go/pkg/gin"
 	"github.com/rebirthmonkey/go/pkg/log"
 
+	"github.com/rebirthmonkey/k8s-dev/pkg/apiextmgr"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
 )
 
 type Config struct {
 	LogConfig           *log.Config
 	ReconcilermgrConfig *reconcilermgr.Config
-	GinConfig           *gin.Config
+	APIExtConfig        *apiextmgr.Config
 }
 
 type CompletedConfig struct {
 	CompletedLogConfig           *log.CompletedConfig
 	CompletedReconcilermgrConfig *reconcilermgr.CompletedConfig
-	CompletedGinConfig           *gin.CompletedConfig
+	CompletedAPIExtConfig        *apiextmgr.CompletedConfig
 }
 
 var (
@@ -32,7 +32,7 @@ func NewConfig() *Config {
 	return &Config{
 		LogConfig:           log.NewConfig(),
 		ReconcilermgrConfig: reconcilermgr.NewConfig(),
-		GinConfig:           gin.NewConfig(),
+		APIExtConfig:        apiextmgr.NewConfig(),
 	}
 }
 
@@ -43,7 +43,7 @@ func (c *Config) Complete() *CompletedConfig {
 		config = CompletedConfig{
 			CompletedLogConfig:           c.LogConfig.Complete(),
 			CompletedReconcilermgrConfig: c.ReconcilermgrConfig.Complete(),
-			CompletedGinConfig:           c.GinConfig.Complete(),
+			CompletedAPIExtConfig:        c.APIExtConfig.Complete(),
 		}
 	})
 
@@ -51,7 +51,7 @@ func (c *Config) Complete() *CompletedConfig {
 }
 
 // New creates a new manager based on the configuration
-func (c *CompletedConfig) New() (*Manager, error) {
+func (c *CompletedConfig) New() (*KubeController, error) {
 	err := c.CompletedLogConfig.New()
 	if err != nil {
 		log.Fatalf("Failed to launch Log: %s", err.Error())
@@ -64,15 +64,15 @@ func (c *CompletedConfig) New() (*Manager, error) {
 		return nil, err
 	}
 
-	ginServer, err := c.CompletedGinConfig.New()
+	apiextmgr, err := c.CompletedAPIExtConfig.New()
 	if err != nil {
-		log.Fatalf("Failed to launch Gin server: %s", err.Error())
+		log.Fatalf("Failed to launch APIExtManager: %s", err.Error())
 		return nil, err
 	}
 
-	mgr := &Manager{
+	mgr := &KubeController{
 		ReconcilerManager: rmgr,
-		ginServer:         ginServer,
+		APIExtManager:     apiextmgr,
 	}
 
 	return mgr, nil

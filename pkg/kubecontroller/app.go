@@ -1,4 +1,4 @@
-package reconcilerapp
+package kubecontroller
 
 import (
 	"github.com/rebirthmonkey/go/pkg/app"
@@ -22,7 +22,7 @@ func NewApp(basename string) *app.App {
 func run(opts *Options) app.RunFunc {
 	return func(basename string) error {
 		log.Info("[App] Run")
-		manager, err := NewManager(opts)
+		manager, err := NewKubeController(opts)
 		if err != nil {
 			return err
 		}
