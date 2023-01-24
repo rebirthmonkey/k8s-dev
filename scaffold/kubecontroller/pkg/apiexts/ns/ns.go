@@ -13,12 +13,12 @@ import (
 func init() {
 	registry.Register(registry.APIExtHandler{
 		RegisterFunc: RegisterFunc,
-		Prefix:       "/v1",
+		Prefix:       "/global",
 	})
 }
 
 func RegisterFunc(prefix string, ginEngine *gin.Engine, clients client.Clients) {
-	ginEngine.GET(fmt.Sprintf("%s/ns/:name", prefix), getNamespacesHandler(clients))
+	ginEngine.GET(fmt.Sprintf("%s/nss", prefix), getNamespacesHandler(clients))
 }
 
 func getNamespacesHandler(clients client.Clients) gin.HandlerFunc {

@@ -1,11 +1,11 @@
 package reconcilerapp
 
 import (
-	"golang.org/x/sync/errgroup"
 	"os"
 
 	"github.com/rebirthmonkey/go/pkg/gin"
 	"github.com/rebirthmonkey/go/pkg/log"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	amgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/apiextmgr/registry"
@@ -25,7 +25,8 @@ type Manager struct {
 
 type PreparedManager struct {
 	*reconcilermgr.PreparedReconcilerManager
-	preparedGinServer *gin.PreparedServer
+	*gin.PreparedServer
+	K8sclients k8sclient.Clients
 }
 
 func NewManager(opts *Options) (*Manager, error) {
@@ -50,10 +51,12 @@ func (mgr *Manager) PrepareRun() *PreparedManager {
 
 	preparedReconcilerMgr := mgr.ReconcilerManager.PrepareRun(scheme)
 	preparedGinServer := mgr.ginServer.PrepareRun()
+	k8sclients := k8sclient.NewClientsManager(scheme, "", "")
 
 	return &PreparedManager{
 		PreparedReconcilerManager: preparedReconcilerMgr,
-		preparedGinServer:         preparedGinServer,
+		PreparedServer:            preparedGinServer,
+		K8sclients:                k8sclients,
 	}
 }
 
@@ -78,9 +81,8 @@ func (pmgr *PreparedManager) Run() error {
 
 	if pmgr.APIServerEnabled {
 		eg.Go(func() error {
-			k8scli := k8sclient.NewClientsManager(pmgr.GetScheme(), "", "")
-			amgrregistry.AddToManager(pmgr.preparedGinServer, k8scli)
-			if err := pmgr.preparedGinServer.Run(); err != nil {
+			amgrregistry.AddToManager(pmgr.PreparedServer, pmgr.K8sclients)
+			if err := pmgr.PreparedServer.Run(); err != nil {
 				log.Error("[PreparedManager] Error occurred while Gin server is running")
 				return err
 			}

@@ -17,8 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
-
-	apiexts "github.com/rebirthmonkey/k8s-dev/pkg/k8s/apiexts/client"
 )
 
 type KubeClientFactory func() client.Client
@@ -26,12 +24,21 @@ type KubeClientFactory func() client.Client
 type Clients interface {
 	KubeClient() client.Client
 	NoCacheClient() client.Client
-	ApiextsClient() apiexts.Interface
+	ApiextsClient() Interface
 	RestClient() *RestClient
 	WithToken(token string) Clients
 }
 
 var _ Clients = &clients{}
+
+type clients struct {
+	token         string
+	lock          sync.RWMutex
+	client        client.Client
+	nocacheClient client.Client
+	manager       *clientsManager
+	cacher        cache.Cache
+}
 
 // Clients Teleport clients aggregation
 type clientsManager struct {
@@ -42,15 +49,6 @@ type clientsManager struct {
 	lock         sync.RWMutex
 	clients      map[string]*clients
 	global       *clients
-}
-
-type clients struct {
-	token         string
-	lock          sync.RWMutex
-	client        client.Client
-	nocacheClient client.Client
-	manager       *clientsManager
-	cacher        cache.Cache
 }
 
 func newClients(manager *clientsManager) *clients {
@@ -110,7 +108,7 @@ func (cli *clientsManager) NoCacheClient() client.Client {
 	return cli.getGlobal().NoCacheClient()
 }
 
-func (cli *clientsManager) ApiextsClient() apiexts.Interface {
+func (cli *clientsManager) ApiextsClient() Interface {
 	return cli.getGlobal().ApiextsClient()
 }
 
@@ -183,8 +181,8 @@ func (cli *clients) restConfig() (*rest.Config, error) {
 	return c, nil
 }
 
-func (cli *clients) ApiextsClient() apiexts.Interface {
-	return apiexts.NewClient(cli.manager.apiextsUrl, cli.token)
+func (cli *clients) ApiextsClient() Interface {
+	return NewClient(cli.manager.apiextsUrl, cli.token)
 }
 
 func (cli *clients) kubeClient() (client.Client, error) {
