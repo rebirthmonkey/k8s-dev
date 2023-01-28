@@ -241,30 +241,9 @@ spec:
 EOF
 ```
 
-## PhaseMachine
+## APIExt
 
-phasemachine 其实是在 controller-runtime 外封装一层（添加了不同 phase 的数据结构）
-
-迁移工具的 controller 是基于 pm 实现的 controller，需要在 Reconcile() 中处理各个 phase 的状态流转
-
-Phase建模：典型的、单一功能的迁移工具，通常建模以下Phase集：
-
-- Pending/Initializing/Uninitialized（这些名字只是举例）：在此阶段，收集迁移所需的各种信息
-- Precheck/PreFlight/Dryrun：在此阶段，进行迁移是否可以进行的的预检
-- Migrate/InFlight/Run：在此阶段，执行实际的迁移逻辑
-- PreFailed：终止状态，表示预检阶段失败
-- Failed：终止状态，表示迁移阶段失败
-- Succeeded：终止状态，表示迁移成功
-
-在具体开发 controller 时，每个 Phase 对应一个处理函数，处理函数驱动 Phase 之间的变换。开发新的 controller，实际上就是实例化一个 PhaseMachine 结构，并提供 Phase 建模、状态转换矩阵、Phase 处理函数。
-
-通常需要为每一个工具，创建独立的包，如 controllers/movetovpc。并在此包中对 PhaseMachine 做一层简单的 wrapper。这个 wrapper 的目的是传入一些控制参数、上下文对象（例如访问APIServer的客户端）。
-
-
-
-## APIExtension
-
-
+因为除了 k8s 风格的 API 接口外，有时需要采用传统的 REST 风格的接口，因此在 kubecontroller 设计的时候，同时采用了基于 Gin 的 APIExt 接口，用于简化 k8s 接口。
 
 ## 定制APIServer
 
@@ -316,9 +295,26 @@ kubectl -s http://127.0.0.1:6080 apply -f initialization/users
 kubectl -s http://127.0.0.1:6080 -n default get users
 ```
 
+## 扩展机制
 
+### PhaseMachine
 
-## Web-Backend
+因为 Reconciler 本质是基于 event，在不同的 state 之前流转（state machine），因此可以基于 Reconciler 设计一个 State Machine 的框架，方便不同状态间的流转，也就是 PM（PhaseMachine）框架。PM 其实是在 k8s 的 controller-runtime 外封装一层，添加了不同 phase 的数据结构。
+
+基于 PM 实现的 Reconciler，需要在 Reconcile() 方法中处理各个 phase 的状态流转。Phase 建模建议包含以下状态：
+
+- Pending/Initializing/Uninitialized：在此阶段，收集初始化信息。
+- Precheck/PreFlight/DryRun：在此阶段，进行一些预检。
+- Migrate/InFlight/Run：在此阶段，执行实际的业务逻辑。
+- PreFailed：终止状态，表示预检阶段失败。
+- Failed：终止状态，表示业务逻辑阶段失败。
+- Succeeded：终止状态，表示业务逻辑成功。
+
+在具体开发 Reconciler 时，每个 Phase 对应一个 Handler 处理函数，处理函数驱动 Phase 之间的变换。开发新的 Reconciler，实际上就是实例化一个 PhaseMachine 结构，并提供 1/ Phase 建模、2/ 状态转换矩阵、3/ Phase 处理函数。
+
+通常需要为每个 Reconciler 对应一个独立的包，如 reconcilers/pmdemo，并在此包中对 PhaseMachine 做一层简单的 wrapper。这个 wrapper 的目的是传入一些控制参数、上下文对象。
+
+### Web-Backend
 
 
 
@@ -342,16 +338,3 @@ npm run dev
 - 本地浏览器访问：`http://127.0.0.1:8000`，默认的用户名密码是 `admin:teleport`。
 
 
-
-
-
-
-
-manager 中可以包含 1 个或多个 controller。初始化`Controller`调用`ctrl.NewControllerManagedBy`来创建`Builder`，通过 Build 方法完成初始化：
-
-- WithOptions()：填充配置项
-- For()：设置 reconcile 处理的资源
-- Owns()：设置监听的资源
-- Complete()：通过调用 Build() 函数来间接地调用：
-  - doController() 函数来初始化了一个 Controller，这里面传入了填充的 Reconciler 以及获取到的 GVK
-  - doWatch() 函数主要是监听想要的资源变化，`blder.ctrl.Watch(src, hdler, allPredicates...)` 通过过滤源事件的变化，`allPredicates`是过滤器，只有所有的过滤器都返回 true 时，才会将事件传递给 EventHandler，这里会将 Handler 注册到 Informer 上。

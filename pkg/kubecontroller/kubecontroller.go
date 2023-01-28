@@ -46,7 +46,7 @@ func NewKubeController(opts *Options) (*KubeController, error) {
 
 // PrepareRun creates a running manager instance after complete initialization.
 func (mgr *KubeController) PrepareRun() *PreparedKubeController {
-	log.Info("[APIExtManager] PrepareRun")
+	log.Info("[KubeController] PrepareRun")
 
 	preparedReconcilerMgr := mgr.ReconcilerManager.PrepareRun(scheme)
 	preparedAPIExtMgr := mgr.APIExtManager.PrepareRun()
@@ -60,19 +60,19 @@ func (mgr *KubeController) PrepareRun() *PreparedKubeController {
 }
 
 func (pmgr *PreparedKubeController) Run() error {
-	log.Info("[PreparedAPIExtManager] Run")
+	log.Info("[PreparedKubeController] Run")
 
 	var eg errgroup.Group
 
 	eg.Go(func() error {
 		rmgrregistry.AddToManager(pmgr.ReconcilerManager)
 		if err := pmgr.ReconcilerManager.Setup(); err != nil {
-			log.Errorf("[PreparedAPIExtManager] Failed to setup reconcilers", err)
+			log.Errorf("[PreparedKubeController] Failed to setup reconcilers: %s", err)
 			os.Exit(1)
 		}
 
 		if err := pmgr.PreparedReconcilerManager.Run(); err != nil {
-			log.Error("[PreparedAPIExtManager] Error occurred while controller manager is running")
+			log.Error("[PreparedKubeController] Error occurred while controller manager is running")
 			return err
 		}
 		return nil

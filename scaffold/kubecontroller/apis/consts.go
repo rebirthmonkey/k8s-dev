@@ -1,5 +1,6 @@
 package apis
 
 const (
-	ResourceAts = "ats"
+	ResourceAts             = "ats"
+	ResourceRedisMigrations = "redismigrations"
 )

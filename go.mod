@@ -3,13 +3,18 @@ module github.com/rebirthmonkey/k8s-dev
 go 1.18
 
 require (
+	github.com/antchfx/jsonquery v1.3.2
 	github.com/gin-gonic/gin v1.7.7
+	github.com/go-logr/logr v1.2.3
+	github.com/jinzhu/copier v0.3.5
 	github.com/marmotedu/component-base v1.6.2
-	github.com/rebirthmonkey/go v0.0.0-20221123034940-21b6e99ec611
+	github.com/mitchellh/hashstructure/v2 v2.0.2
+	github.com/rebirthmonkey/go v0.0.0-20230124092027-da4328ce43a7
 	github.com/spf13/pflag v1.0.5
 	github.com/thoas/go-funk v0.9.2
 	golang.org/x/net v0.2.0
 	golang.org/x/sync v0.1.0
+	gopkg.in/multierror.v1 v1.0.2
 	k8s.io/api v0.25.4
 	k8s.io/apimachinery v0.25.4
 	k8s.io/apiserver v0.25.4
@@ -27,16 +32,18 @@ require (
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
+	github.com/antchfx/xpath v1.2.3 // indirect
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dlclark/regexp2 v1.2.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
@@ -81,6 +88,8 @@ require (
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
+	github.com/sony/sonyflake v1.0.0 // indirect
+	github.com/speps/go-hashids v2.0.0+incompatible // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.5.0 // indirect

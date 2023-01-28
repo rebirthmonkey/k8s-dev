@@ -1,3 +1,5 @@
+
+
 # PhaseMachine框架
 
 ## 简介
@@ -10,18 +12,18 @@ PhaseMachine 框架是专门用于开发 Operator 的框架，实现了狭义上
 
 #### Phase
 
-PhaseMachine 的设计理念，是基于这样的假设：Operator 的业务逻辑中，通常可以分为几个明确的、职责分明的阶段。这里的阶段就是 Phase，典型阶段包括：预检（Precheck）、执行（Action）、确认（Confirm），以及一些辅助的 Phase：初始化（Initialize）、成功（Succeeded）、失败（Failed）。Phase 是 PhaseMachine 最重要的概念，PhaseMachine 的本质就是在各个 Phase 之间进行流转的状态机。Phase 本质上就是 string，取值由 PhaseMachine 的使用者自行设计。
+PhaseMachine 的设计理念，是基于这样的假设：Operator 的业务逻辑中，通常可以分为几个明确的、职责分明的阶段。这里的阶段就是 Phase，典型阶段包括：预检（Precheck）、执行（Action）、确认（Confirm），以及一些辅助的 Phase：初始化（Initialize）、成功（Succeeded）、失败（Failed）。Phase 是 PhaseMachine 最重要的概念，PhaseMachine 的本质就是在各个 Phase 之间进行流转的 State Machine。Phase 本质上就是 string 类型变量，取值由 PhaseMachine 的使用者自行设计。
 
 - 起始 Phase：新启动的 PhaseMachine 处于该 Phase。
 - 终止 Phase：PhaseMachine 到达此类 Phase 后，运维过程终止。终止 Phase 分为两类：成功类 Phase、失败类 Phase。
 
 #### Handler
 
-在每个阶段，业务逻辑都需要做一些事情，这个事情的载体就是 Handler。每个非辅助 Phase，都对应唯一一个 Handler。Handler 自身支持组合模式，也就是一个 Handler可以由 N 个 component handler 构成。这些 component handler 自身亦可使 compound  handler。这可以构成复杂的 Handler 树，每个节点负责一个职责，这种Handler树在做预检时很有用。一个 Phase 的直接 Handler，称为 Root Handler。
+在每个阶段，业务逻辑都需要做一些事情，这个事情的载体就是 Handler。每个非辅助 Phase，都对应唯一一个 Handler。Handler 自身支持组合模式，也就是一个 Handler可以由 N 个 ComponentHandler 构成。这些 ComponentHandler 自身亦可使 CompoundHandler。这可以构成复杂的 Handler 树，每个节点负责一个职责，这种 Handler 树在做预检时很有用。一个 Phase 的直接 Handler，称为 Root Handler。
 
-component handler 的执行方式有两种：
+ComponentHandler 的执行方式有两种：
 
-- 并行执行：发动 goroutine，在后台执行这些 component handlers。当任何一个 Handler 失败，所有 Handler 都有机会通过 chan 获取该信息，进而停止不必要的工作。
+- 并行执行：发动 goroutine，在后台执行这些 ComponentHandlers。当任何一个 Handler 失败，所有 Handler 都有机会通过 channel 获取该信息，进而停止不必要的工作。
 - 串行执行：一个个的执行，一旦出现失败，则立即停止。
 
 Handler 具有一系列元数据，和框架核心有关的是 Name：
@@ -42,17 +44,17 @@ Handler 具有一系列元数据，和框架核心有关的是 Name：
 
 ReconcileState 和 Handler 一一对应，由于 Handler 实现了组合模式，ReconcileState 也自然实现该模式，以反映整个 Handler 树的状态。同样的，这是框架技术细节，框架的使用者无需关心，也看不到。
 
-对于 compound handler，其 ReconcileState 由框架自动生成，规则如下：
+对于 CompoundHandler，其 ReconcileState 由框架自动生成，规则如下：
 
-- Done：如果所有 conmonent handler 都 Done。
-- Updated：如果任何一个 component handler Updated。
-- Error：所有出错的 component handler 的 Error 数组，如果只有单个错误，则不使用数组。
+- Done：如果所有 ConmonentHandler 都 Done。
+- Updated：如果任何一个 ComponentHandler Updated。
+- Error：所有出错的 ComponentHandler 的 Error 数组，如果只有单个错误，则不使用数组。
 
 #### State
 
 Handler 会接收到一个 State 类型的入参，这个参数反映了 Handler 上次运行（未完成而重入了，就是 Done 为 false）的执行情况。Handler 上次运行的结果，也就是 ReconcileState 中的信息，经过框架梳理后会保存到 API 资源的 Status 中，默认情况下它会保存到 Status.State 字段。State 也实现了组合模式，以反映整个 Handler 树的状态执行情况。
 
-一个 Phase 的 State 就是该 Phase 的 Handler 的 State。Status.State 字段是一个 Map，其键是 Phase 的 Handler 的名称（也就是 Phase 的名称），该字段的类型必须是和 State 结构等价的结构 —— 包含类型、名字相同的字段。特别是，该结构实现组合模式，它必须有个名为 state 的字段，其类型和 Status.State 一致，键是 component handler 的名称、值是 component handler 的State。
+一个 Phase 的 State 就是该 Phase 的 Handler 的 State。Status.State 字段是一个 Map，其键是 Phase 的 Handler 的名称（也就是 Phase 的名称），该字段的类型必须是和 State 结构等价的结构 —— 包含类型、名字相同的字段。特别是，该结构实现组合模式，它必须有个名为 state 的字段，其类型和 Status.State 一致，键是 ComponentHandler 的名称、值是 ComponentHandler 的 State。
 
 #### Phase变换
 
@@ -60,7 +62,7 @@ Handler 会接收到一个 State 类型的入参，这个参数反映了 Handler
 
 如果使用 DefaultDef，则不需要实现 NextPhase，而是需要提供 Phase 变换矩阵：它决定了，在任何一个 Phase 的 Handler 成功或失败的情况下，应该跳转到什么 Phase。
 
-此外，Handler 可以在 ReconcileState.Next 中强制指定跳转目标，尽管很少这么做。
+此外，Handler 可以在 ReconcileState.Next() 中强制指定跳转目标，尽管很少这么做。
 
 #### Status
 
@@ -68,13 +70,13 @@ Handler 会接收到一个 State 类型的入参，这个参数反映了 Handler
 
 ### 架构
 
-架构图如下，紫色部分是PhaseMachine的核心：
+PM 架构图如下，在 KubeBuilder Reconciler 外封装了一层，紫色部分是 PM 的核心：
 
 <img src="figures/image-20230112173031834.png" alt="image-20230112173031834" style="zoom: 33%;" />
 
-#### PhaseMachineImpl
+#### pm.PhaseMachineImpl
 
-pm.PhaseMachineImpl 实现了 Reconciler 接口，但是它不是标准的 Operator，PhaseMachine 框架的用户，还需要实现一个垫片控制器（Shim Reconciler），它是 Operator Framework 和 PhaseMachine 框架之间的桥梁：
+pm.PhaseMachineImpl 实现了 Reconciler 接口，但是它不是标准的 Operator，PhaseMachine 框架的用户还需要实现一个垫片控制器（Shim Reconciler），它是 Operator Framework 和 PhaseMachine 框架之间的桥梁：
 
 - 负责将 pm.PhaseMachineImpl 包装为标准的 Operator，并注册到控制器管理器。
 - 负责准备 PhaseMachine 所有方法都需要使用的上下文对象 context.Context。
@@ -87,7 +89,7 @@ pm.PhaseMachineImpl 需要一个 PhaseMachineDef，后者的缺省实现是 Defa
 
 ## 代码
 
-### pm.PhaseMachineImpl
+### pm.PhaseMachineImpl结构
 
 该结构是 PhaeMachine 和 Operator 模式之间的桥梁。它实现了 Reconciler 接口，其本身就是一个Operator。其 Reconcile 方法实现了 PhaseMachine 的核心逻辑：
 
@@ -98,7 +100,7 @@ pm.PhaseMachineImpl 需要一个 PhaseMachineDef，后者的缺省实现是 Defa
 
 重复上述过程，直到进入终止 Phase。
 
-### PhaseMachineDef
+### PhaseMachineDef接口
 
 该接口是框架的核心，每个新开发的 PhaseMachine，实际上就是实现该接口：
 
@@ -136,7 +138,7 @@ type PhaseMachineDef interface {
 
 实现所有上述接口，pm.PhaseMachineImpl 就能够驱动 PhaseMachine 了。
 
-### DefaultDef
+### DefaultDef结构
 
 由于 PhaseMachineDef 的大部分逻辑具有通用性，让框架用户去都去实现，工作量大而重复，因此框架提供了 DefaultDef，作为缺省实现。
 
@@ -182,7 +184,7 @@ Handler 一般也不实现接口，而是使用 HanderFunc 将一个裸函数转
 ### Resource
 
 ```go
-// Resource API resource, declares the desired state of migration ops
+// Resource API resource, declares the desired state of ops
 type Resource interface {
 }
 ```
@@ -257,7 +259,7 @@ type State struct {
 
 State 每次变更后，会直接存放到 Resource 的特定字段下，这个上文有提及。
 
-每次 Handler 被调用时，它都会接收到一个代表上次调用后的 State。如果 StartTime为nil，提示这是第一次调用 Handler。
+每次 Handler 被调用时，它都会接收到一个代表上次调用后的 State。如果 StartTime 为 nil，提示这是第一次调用 Handler。
 
 ### Handler
 
@@ -363,9 +365,9 @@ type MoveToVpcSpec struct {
 }
 ```
 
-以 MTV 为例，为了切换 CVM 所属VPC，需要知道的信息包括：账号的 secret、源 vpcid、目标 vpcid。如果不是切换所有 CVM 的 VPC，则还需要提供 CVM 的列表。
+以 MTV 为例，为了切换 CVM 所属 VPC，需要知道的信息包括：账号的 secret、源 vpcid、目标 vpcid。如果不是切换所有 CVM 的 VPC，则还需要提供 CVM 的列表。
 
-期望状态就是，选定资源的所属 vpc 从源变为目标 —— 这是隐含在 Spec 中的。
+期望状态就是，选定资源的所属 VPC 从源变为目标 —— 这是隐含在 Spec 中的。
 
 #### Status 设计
 
@@ -394,7 +396,6 @@ type MoveToVpcState struct {
     State     map[string]MoveToVpcState `json:"state"`
     Fatal     bool                      `json:"fatal"`
     Failed    bool                      `json:"failed"`
-
     // 额外的字段
     Objects []string
 }
@@ -429,12 +430,12 @@ func init() {
 
 ### 定义PhaseMachine
 
-在这一步，需要先思考清楚，准备开发的工具：
+在这一步，需要先思考清楚，准备开发的业务逻辑：
 
 - 其运作分为几个阶段（Phase）
 - 每个阶段的处理逻辑是怎样的（Handler）
 
-强烈建议每个 Handler 仅仅做一件事情，用 compound handler 来组织多个原子能力的 handler。
+强烈建议每个 Handler 仅仅做一件事情，用 CompoundHandler 来组织多个原子能力的 Handler。
 
 PhaseMachine  的代码应该存放在 `pkg/controllers/资源名称/phasemachine_def.go` 中，例如`pkg/controllers/movetovpc/phasemachine_def.go`。MTV 的 PhaseMachine 定义如下：
 
@@ -1015,10 +1016,6 @@ branch pm-demo：
 IDE 配置：
 
 - --zap-log-level=4 --config=config/teleport.yaml  --apiserver-url=http://127.0.0.1:6080
-
-
-
-
 
 
 
