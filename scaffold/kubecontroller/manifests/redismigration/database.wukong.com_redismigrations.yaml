@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
-  name: redismigrations.database.cloud.tencent.com
+  name: redismigrations.database.wukong.com
 spec:
-  group: database.cloud.tencent.com
+  group: database.wukong.com
   names:
     kind: RedisMigration
     listKind: RedisMigrationList

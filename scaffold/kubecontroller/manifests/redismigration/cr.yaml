@@ -1,4 +1,4 @@
-apiVersion: database.cloud.tencent.com/v1
+apiVersion: database.wukong.com/v1
 kind: RedisMigration
 metadata:
   name: rmtest
