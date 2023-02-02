@@ -243,7 +243,7 @@ EOF
 
 ## APIExt
 
-因为除了 k8s 风格的 API 接口外，有时需要采用传统的 REST 风格的接口，因此在 kubecontroller 设计的时候，同时采用了基于 Gin 的 APIExt 接口，用于简化 k8s 接口。
+因为除了 k8s 风格的 API 接口外，有时需要采用传统的 REST 风格的接口，因此在 kubecontroller 设计的时候，同时采用了基于 Gin 的 APIExt 接口，用于简化 k8s 接口。每个 k8s 风格的 API 前都会架一个 简化的 Gin API。
 
 ## 定制APIServer
 
@@ -295,6 +295,16 @@ kubectl -s http://127.0.0.1:6080 apply -f initialization/users
 kubectl -s http://127.0.0.1:6080 -n default get users
 ```
 
+## Web
+
+### Backend
+
+负责前端用户权限的处理，因为后端往往都是 root 权限。
+
+### Frontend
+
+基于 JavaScript、React 等的真正前端。
+
 ## 扩展机制
 
 ### PhaseMachine
@@ -314,7 +324,21 @@ kubectl -s http://127.0.0.1:6080 -n default get users
 
 通常需要为每个 Reconciler 对应一个独立的包，如 reconcilers/pmdemo，并在此包中对 PhaseMachine 做一层简单的 wrapper。这个 wrapper 的目的是传入一些控制参数、上下文对象。
 
-### Web-Backend
+### 流程引擎
+
+#### 基本概念
+
+- WorkflowDefinition：流程模板
+  - Object：流程模板中的元素
+    - Event：Start、Waiting、Pending、Doing、End（Succeeded、Failed、Aborted）
+    - Activity：可以注册不同的 ActivityExecutor Type，用来实现不同的 Activity 类型
+      - Executor：对流程中具体执行内容的封装，可是是 KubeController、Binary 等
+    - Gateway：
+- WorkflowExecution：运行中的流程实例，记录流程当前执行的状态
+  - Entry：流程执行过程中的元素，
+- Engine：具体执行 workflow 的 Engine。
+
+
 
 
 
@@ -336,5 +360,4 @@ npm run dev
 ```
 
 - 本地浏览器访问：`http://127.0.0.1:8000`，默认的用户名密码是 `admin:teleport`。
-
 

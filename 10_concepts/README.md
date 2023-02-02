@@ -411,6 +411,20 @@ make all
 
 
 
+## 高阶
+
+### Reconciler
+
+#### 参数
+
+- Concurrence：具体启多少个 Reconciler，每个 Reconciler 每次只能处理一个 event。
+
+#### 函数
+
+- predict()：指明哪些 event 会触发 Reconciler。
+
+
+
 ## Lab
 
 ### scheme
