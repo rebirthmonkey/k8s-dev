@@ -11,10 +11,8 @@ import (
 )
 
 func main() {
-
-	// config
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
-	//config, err := clientcmd.BuildConfigFromFlags("", "/tmp/cls-j7xitnn8-config")  // for the remote k8s cluster
+	//config, err := clientcmd.BuildConfigFromFlags("", "/tmp/cls-j7xitnn8-config")
 	if err != nil {
 		panic(err)
 	}
@@ -23,13 +21,11 @@ func main() {
 	config.GroupVersion = &corev1.SchemeGroupVersion
 	config.NegotiatedSerializer = scheme.Codecs
 
-	// REST client
 	restClient, err := rest.RESTClientFor(config)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	// get data
 	pod := corev1.Pod{}
 	err = restClient.Get().
 		Namespace("default").

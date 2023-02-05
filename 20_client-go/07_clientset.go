@@ -17,7 +17,6 @@ func main() {
 		panic(err)
 	}
 
-	// clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		fmt.Println(err)

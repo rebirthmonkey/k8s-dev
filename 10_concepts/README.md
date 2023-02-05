@@ -1,13 +1,9 @@
 # Basics
 
-## 简介
-
-### 特性
-
 k8s 用于管理分布式、容器化应用，它提供了零停机时间部署、自动回滚、缩放和自愈等功能。k8s 提供了一个抽象层，使其可以在物理或 VM 环境中部署容器应用，提供以容器为中心的基础架构。其设计理念是为了支撑**横向扩展**，即调整应用的副本数以提高可用性。k8s的具体特点如下：
 
 - 环境无依赖：同一个应用支持公有云、私有云、混合云、多云部署。
-- 面向切片：通过插件化，使所用功能都以插件部署形式动态加载，尤其针对复杂度较高的应用。
+- 面向切片（Aspect-oriented）：通过插件化使所用功能都以插件部署形式动态加载，尤其针对业务复杂度较高的应用。
 - 声明式：平台自身通过自动化方式达到预期状态。
 
 ## 架构
@@ -51,241 +47,72 @@ Node 是 k8s 集群的工作节点，负责管理本 node 上的所有容器，�
 - kubectl：kubectl 是 k8s 的 CLI，用户可以通过 kubectl 以命令交互的方式对 kube-apiserver 进行操作，通讯协议使用 HTTP/JSON。kubectl 发送相应的 HTTP 请求，请求由 kube-apiserver 接收、处理并将结果反馈给 kubectl，kubectl 接收到相应并展示结果。
 - [client-go](../20_client-go/README.md)：client-go 是从 k8s 的代码中独立抽离出来的包，并作为官方提供的 Go 的 SDK 发挥作用。在大部分基于 k8s 做二次开发的程序中，建议通过 client-go 来实现与 kube-apiserver 的交互过程。因为 client-go 在 k8s 系统上做了大量优化，k8s 的核心组件（如 kube-scheduler、kube-controller-manager 等）都通过 client-go 与 kube-apiserver 进行交互。
 
-## 数据结构
+## Schema
 
-k8s 支撑多个 group，每个 group 支持多个 version，每个 version 又支持多个 resource。我们常提到的 schema 指 GVR、GV、GR、GVK、GK 等数据结构
+k8s 所管理的 API 资源支持多个 group，每个 group 支持多个 version，每个 version 又支持多种资源。我们常提到的 schema 指 GVR、GV、GR、GVK、GK 等。
 
-### Group 资源组
+### GVR
 
-k8s 定义了许多 group，这些 group 按不同的功能将 resource 进行划分，但也支持一个 resource 属于不同的 group，例如`apis/apps/v1/deployments`。另外，有些资源因为历史遗留原因是没有 group 的，被称为 core group，例如 `api/v1/pods`。
+GVR（GroupVersionResource）：资源也有分组和版本号，具体表现形式为 `group/version/resource/subresource`，如 deployments 对应  /apis/apps/v1/namespaces/ns1/deployments。以下会分别介绍 group、version、resource。
+
+#### Group
+
+k8s 定义了许多 group（资源组），这些 group 按不同的功能将 resource 进行划分，但也支持一个 resource 属于不同的 group，例如`apis/apps/v1/deployments`。另外，有些资源因为历史遗留原因是没有 group 的，被称为 core group，例如 `api/v1/pods`。
 
 group 的主要功能包括：
 
 - 将资源划分 group 后，允许以 group 为单元进行启用/禁用。
 - 每个 group 有自己的 version，方便以 group 为单元进行迭代升级。
 
-#### 数据结构
+其数据结构：
 
 - Name：group 的名字。
 - Versions：group 下所支持的版本。
-- PreferredVersion：推荐使用的version。
+- PreferredVersion：推荐使用的 version。
 
-### Version 资源版本
+#### Version
 
-每个 group 可以拥有不同的 version，在 YAML 中的 Version 其实就是 “group+version”。k8s 的 version 分为了 Alpha、Beta、Stable，依次逐步成熟，在默认情况下 Alpha 的功能会在生产环境被禁用。
+每个 group 可以拥有不同的 version（资源版本），在 k8s YAML 中的 Version 其实就是 “group+version”。k8s 的 version 分为了 Alpha、Beta、Stable，依次逐步成熟，在默认情况下 Alpha 的功能会在生产环境被禁用。
 
-#### 数据结构
+数据结构：
 
 - Versions：所支持的所有版本。
 
-### Type 结构体
+#### Resource
 
-Type 是 Go 内部的结构体，在编码过程中，k8s 的资源都是以 Go 的 Type 结构体存储的。
+API resource（REST）是 k8s 对外的核心概念，k8s 整个体系都是围绕着 resource 构建的。k8s 的本质就是对这些 REST resource 的控制，包括注册、管理、调度并维护资源的状态。目前 k8s 支持 8 种对 resource 的操作，分别是 create、delete、delectcollection、get、list、patch、update、watch。
 
-### Kind 资源
+resource 以小写复数的形式（如 pods）出现在 HTTP Endpoint 中，用于暴露 resource 的 CRUD 操作。
 
-k8s 的 group、version、resource 都是对外展示的 REST 资源，而 Kind 是 k8s 内部的资源表示形式，用于描述外部 REST resource 对应的 k8s 内部资源形式，k8s 内部的 Go Type 都是基于某种 kind 来实现的。根据 kind 的不同，resource 中具体字段也会有所不同，不过他们都用基本相同的结构。不同的 kind 被映射到不同的 group 中，并有着不同的 version。
+##### Resource Object
+
+Resource 被实例化后会表现为一个 resource object 资源对象。
+
+### GVK
+
+#### Kind
+
+k8s 的 group、version、resource 都是对外展示的 API 资源，而 kind 是 k8s 内部的资源表示形式，用于描述外部 API resource 对应的 k8s 内部资源形式，后续代码层面的 Go Type 都是基于某种 kind 来实现的。根据 kind 的不同，resource 中具体字段也会有所不同，不过他们都用基本相同的结构。不同的 kind 被映射到不同的 group 中，并有着不同的 version。
 
 #### GVK
 
 由于不同版本的 kind 的结构体存在差异，如果只用 kind 则无法获取具体版本的结构体。因此需要 GVK 这 3 个信息才能准确确定一个 kind，并且通过后续介绍的 scheme 获取 GVK 对应的 Go 结构体。但同一个 kind 结构体可以对应多个不同的 GVK。
 
-#### scheme 注册表
+#### Kind vs. Resource
 
-scheme 用于实现 GVK 与 Go Type 结构体之间的映射。
+kind 是对应了 k8s 内部使用，可以认为是用于 k8s 内部操作的资源。而 resource 是从外部来看的 k8s 的 API REST 资源。具体而言，resource 都会对应一个 HTTP Path，而 kind 是通过这个 HTTP Path 返回的对象的类型，用于 k8s 内部操作或 Etcd 存储。
 
-k8s 有众多的资源类型，这些资源类型需要统一的注册、存储、查询和管理。scheme 是 k8s 中的注册表，目前 k8s 中的所有资源类型（GVK）都需要注册到 scheme 中，用于建立 **Go Type 结构体与 GVK 间的映射关系**。目前 k8s scheme 支持 UnversionedType 和 KnownType（也被直接称为 Type） 两种 kind 的注册。
+#### RESTMapper
 
-scheme 资源注册表的数据结构主要由 4 个 map 组成：
-
-- gvkToType：
-- typeToGVK：
-- unversionedTypes：
-- unversionedKinds：
-
-在注册资源类型时，会根据 Type 的类型同时添加到这 4 个 map 中。
-
-### Resource 资源
-
-resource（REST）是 k8s 对外的核心概念，k8s 整个体系都是围绕着 resource 构建的。k8s 的本质就是对这些 REST resource 的控制，包括注册、管理、调度并维护资源的状态。目前 k8s 支持 8 种对 resource 的操作，分别是 create、delete、delectcollection、get、list、patch、update、watch。
-
-resource 以小写复数的形式（如 pods）出现在 HTTP endpoint 中，用于暴露 resource 的 CRUD 操作。
-
-#### Resource Object
-
-Resource 被实例化后会表现为一个 resource object 资源对象。
-
-#### Resource/ Kind
-
-Kind 是对应了 Go 内部结构体，可以认为是用于 k8s 内部造作的资源，而 resource 是从外部来看待的 k8s 的 REST 资源。具体而言，resource 都会对应一个 HTTP Path，而 Kind 是通过这个 HTTP Path 返回的对象的类型，用于 k8s 内部操作或 Etcd 存储。
-
-#### GVR
-
-GVR（GroupVersionResource）：资源也有分组和版本号，具体表现形式为 `group/version/resource/subresource`，如 deployments 对应  /apis/apps/v1/namespaces/ns1/deployments。
-
-#### RESTMapping
-
-GVK 与 GVR 之间的映射关系被称为 RESTMapping，用于请求一个 GVK 所对应的 GVR。
+GVK 与 GVR 之间的映射关系被称为 RESTMapper，用于请求一个 GVK 所对应的 GVR。
 
 <img src="figures/image-20220725092000368.png" alt="image-20220725092000368" style="zoom:50%;" />
 
-#### 版本转换
+### Type
 
-resource 可以有多个版本，为了让一个 resource 的多个版本共存，kube-apiserver 需要把 resource 在多个版本间进行转换。为了避免 NxN 的复杂度，kube-apiserver 采用了 internal 版本作为中枢版本，可以用作每个版本与之互转的中间版本。
+Type 是代码层面 Go 内部的 struct 结构体，在编码过程中，k8s 的资源都是以 Go 的 Type struct 的形式存储的。
 
-<img src="figures/image-20220904135441719.png" alt="image-20220904135441719" style="zoom:50%;" />
-
-##### External vs. Internal
-
-在 k8s 中，每个 resource 至少有 External 和 Internal 2 个 version：
-
-- External：对外暴露给用户所使用的 resource，其代码在`pkg/apis/group/version/`目录下。外部版本的资源是需要对外暴露给用户请求的接口，所以资源代码定义了 JSON、Proto 等 Tag，用于请求的序列化及反序列化。
-- Internal：不对外暴露，仅在 kube-apiserver 内部使用。Internal 常用于资源版本的转换（不同的 external 资源版本通过 internal 进行中转），如将 v1beta1 转换为 v1 的路径为 v1beta1 --> internal --> v1。其代码在 `pkg/apis/group/__internal/`目录下。内部版本的资源部对外暴露，所以没有任何 JSON、Proto Tag。
-
-##### 文件布局
-
-```shell
-api
-├── doc.go
-├── fullvpcmigration_types.go
-├── v1
-│   ├── conversion.go
-│   ├── doc.go
-│   ├── fullvpcmigration_types.go
-│   ├── register.go
-│   ├── zz_generated.conversion.go
-│   ├── zz_generated.deepcopy.go
-│   └── zz_generated.openapi.go
-├── v2
-│   ├── doc.go
-│   ├── fullvpcmigration_types.go
-│   ├── register.go
-│   ├── zz_generated.conversion.go
-│   ├── zz_generated.deepcopy.go
-│   └── zz_generated.openapi.go
-└── zz_generated.deepcopy.go
-```
-
-- doc.go：提供包级别的注释
-
-```go
-// +k8s:openapi-gen=true
-// +groupName=gmem.cc
-// +kubebuilder:object:generate=true
- 
-package api
-```
-
-- register.go：用于 Scheme 的注册
-
-```go
-// __internal 版本
-package api
- 
-import (
-    "k8s.io/apimachinery/pkg/runtime"
-    "k8s.io/apimachinery/pkg/runtime/schema"
-)
- 
-const (
-    GroupName = "gmem.cc"
-)
- 
-var (
-    // GroupVersion is group version used to register these objects
-    GroupVersion = schema.GroupVersion{Group: GroupName, Version: runtime.APIVersionInternal}
- 
-    // SchemeBuilder is used to add go types to the GroupVersionKind scheme
-    // no &scheme.Builder{} here, otherwise vk __internal/WatchEvent will double registered to k8s.io/apimachinery/pkg/apis/meta/v1.WatchEvent &
-    // k8s.io/apimachinery/pkg/apis/meta/v1.InternalEvent, which is illegal
-    SchemeBuilder = runtime.NewSchemeBuilder()
- 
-    // AddToScheme adds the types in this group-version to the given scheme.
-    AddToScheme = SchemeBuilder.AddToScheme
-)
- 
-// Kind takes an unqualified kind and returns a Group qualified GroupKind
-func Kind(kind string) schema.GroupKind {
-    return GroupVersion.WithKind(kind).GroupKind()
-}
- 
-// Resource takes an unqualified resource and returns a Group qualified GroupResource
-func Resource(resource string) schema.GroupResource {
-    return GroupVersion.WithResource(resource).GroupResource()
-}
-```
-
-```go
-// v2 版本
-package v2
- 
-import (
-    "cloud.tencent.com/teleport/api"
-    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-    "k8s.io/apimachinery/pkg/runtime"
-    "k8s.io/apimachinery/pkg/runtime/schema"
-)
- 
-var (
-    // GroupVersion is group version used to register these objects
-    GroupVersion = schema.GroupVersion{Group: api.GroupName, Version: "v2"}
- 
-    // SchemeBuilder is used to add go types to the GroupVersionKind scheme
-    SchemeBuilder = runtime.NewSchemeBuilder(func(scheme *runtime.Scheme) error {
-        metav1.AddToGroupVersion(scheme, GroupVersion)
-        return nil
-    })
-    localSchemeBuilder = &SchemeBuilder
- 
-    // AddToScheme adds the types in this group-version to the given scheme.
-    AddToScheme = SchemeBuilder.AddToScheme
-)
- 
-// Kind takes an unqualified kind and returns a Group qualified GroupKind
-func Kind(kind string) schema.GroupKind {
-    return GroupVersion.WithKind(kind).GroupKind()
-}
- 
-// Resource takes an unqualified resource and returns a Group qualified GroupResource
-func Resource(resource string) schema.GroupResource {
-    return GroupVersion.WithResource(resource).GroupResource()
-}
-```
-
-- zz_generated.openapi.go：这是每个普通版本都需要生成的 OpenAPI 定义。这些 OpenAPI 定义必须注册到 API Server，否则将会导致 kubectl apply 等命令报404错误。
-
-- zz_generated.deepcopy.go：这个文件是__internal版本、普通版本中的资源对应Go结构都需要生成的深拷贝函数。
-
-##### 转换流程
-
-external 和 internal version 的相互转换的函数需要事先初始化到 scheme 中。
-
-- 用户发送特定版本请求（如 v1）
-- apiserver 将请求（v1）解码（转换）成 internal 版本
-- apiserver 对 internal 版本的请求进行准入检测和验证
-- 用 internal 版本注册 scheme
-- 将 internal 版本转换成目标版本（如 v2），用于读写入 Etcd
-- 产生最终结果并编码成 v1 返回客户
-
-在外部版与 internal 版的每个连接处，都会发生一次版本转换，而且所有的转换都是双向的。版本转换往往同时伴随着默认值处理，它是填充未设定值的字段的过程。
-
-<img src="figures/image-20220913084442581.png" alt="image-20220913084442581" style="zoom:50%;" />
-
-#### 代码
-
-- 包地址：`pkg/apis/group-name`、
-- resource 定义：
-  - internal： `pkg/apis/group-name/types.go`，它不需要包含 JSON 和 protobuf 标签
-  - external：`pkg/apis/group-name/version/types.go`
-- 类型转换：通过 Scheme 的 Convert() 函数来调用。
-  - 由 conversion-gen 自动生成：`pkg/apis/group-name/zz_generated.conversion.go`
-  - 手动编写：`pkg/apis/group-name/version/conversion.go`
-- 默认值处理：尤其在新版本添加额外字段时，需要自动为其填写默认值。
-  - 由 defaulter-gen 自动生成：`pkg/apis/group-name/zz_generated.defaults.go`
-  - 手动编写：`pkg/apis/group-name/version/defaults.go`
-- 注册 scheme：`pkg/apis/group-name/install/install.go`
-
-#### types.go
+#### xxx_types.go
 
 资源定义通常放在 pkg/apis/group/version 中一个名为 types.go 的文件中，具体内容如下：
 
@@ -306,6 +133,124 @@ external 和 internal version 的相互转换的函数需要事先初始化到 s
   - ShortNames：resource的简称，如pod的简称为po。
 - Spec：用户期望的状态
 - Status：当前的状态
+
+#### scheme
+
+scheme 用于实现 GVK 与 Go Type 结构体之间的映射。
+
+k8s 有众多的资源类型，这些资源类型需要统一的注册、存储、查询和管理。scheme 是 k8s 中的注册表，目前 k8s 中的所有资源类型（GVK）都需要注册到 scheme 中，用于建立 **Go Type 结构体与 GVK 间的映射关系**。目前 k8s scheme 支持 UnversionedType 和 KnownType（也被直接称为 Type） 两种 kind 的注册。
+
+scheme 资源注册表的数据结构主要由 4 个 map 组成：
+
+- gvkToType：
+- typeToGVK：
+- unversionedTypes：
+- unversionedKinds：
+
+在注册资源类型时，会根据 Type 的类型同时添加到这 4 个 map 中。
+
+#### 版本转换
+
+Type Go sturct 与 kind 对应，因为 kind 可以有多个版本，为了让一个 kind 的多个版本共存，kube-apiserver 需要实现 Go struct 多版本间的转换。为了避免 NxN 的复杂度，kube-apiserver 采用了 internal 版本作为中枢版本，可以用作每个版本与之互转的中间版本。
+
+<img src="figures/image-20220904135441719.png" alt="image-20220904135441719" style="zoom:50%;" />
+
+在 k8s 中，每个 Go struct 至少有 External 和 Internal 2 个版本：
+
+- External：对外暴露给用户所使用的 kind，其 Type struct 定义在`pkg/apis/group/version/`目录下。外部版本的资源是需要对外暴露给用户请求的接口，所以资源代码定义了 JSON、Proto 等 Tag，用于请求的序列化及反序列化。
+- Internal：不对外暴露，仅在 kube-apiserver 内部使用。Internal 常用于资源版本的转换（不同的 external 资源版本通过 internal 进行中转），如将 v1beta1 转换为 v1 的路径为 v1beta1 --> internal --> v1。其代码在 `pkg/apis/group/__internal/`目录下。内部版本的资源部对外暴露，所以没有任何 JSON、Proto Tag。
+
+external 和 internal version 的相互转换的函数需要事先初始化到 scheme 中。
+
+- 用户发送特定版本请求（如 v1）
+- kube-apiserver 将请求（v1）解码（转换）成 internal 版本
+- kube-apiserver 对 internal 版本的请求进行准入检测和验证
+- 用 internal 版本注册 scheme
+- 将 internal 版本转换成目标版本（如 v2），用于读写入 Etcd
+- 产生最终结果并编码成 v1 返回客户
+
+在外部版与 internal 版的每个连接处，都会发生一次版本转换，而且所有的转换都是双向的。版本转换往往同时伴随着默认值处理，它是填充未设定值的字段的过程。
+
+<img src="figures/image-20220913084442581.png" alt="image-20220913084442581" style="zoom:50%;" />
+
+##### 代码
+
+- 包地址：`pkg/apis/group-name`
+- resource 定义：
+  - internal： `pkg/apis/group-name/types.go`，它不需要包含 JSON 和 protobuf 标签
+  - external：`pkg/apis/group-name/version/types.go`
+- 类型转换：通过 scheme 的 Convert() 函数来调用。
+  - 由 conversion-gen 自动生成：`pkg/apis/group-name/zz_generated.conversion.go`
+  - 手动编写：`pkg/apis/group-name/version/conversion.go`
+- 默认值处理：尤其在新版本添加额外字段时，需要自动为其填写默认值。
+  - 由 defaulter-gen 自动生成：`pkg/apis/group-name/zz_generated.defaults.go`
+  - 手动编写：`pkg/apis/group-name/version/defaults.go`
+- 注册 scheme：`pkg/apis/group-name/install/install.go`
+
+## 代码
+
+### Layout
+
+
+
+### Option&Config
+
+`k8s.io/apiserver`库使用 option&config 模式来创建一个可运行的 kube-apiserver，对 Config、Option、Server 等对象都做了一层包装，不需要关注这些 wrapper。Option 不会存储 Runtime 的数据结构，它通常只在启动时使用，然后就换转换成 Config，再由 Config 转换成 Runtime 用于在运行时使用。
+
+#### Option
+
+- RecommendedOptions：对应了用户提供的各类选项（外加所谓推荐选项，降低使用时的复杂度），如 Etcd 地址、Etcd 存储前缀、apiserver 的基本信息等。
+  - Validate()：校验。
+  - Complete()：自动设置默认值。
+  - Config()：转换成 Config。
+- CustomServerOptions：嵌入了 RecommendedOptions，并添加了一些额外的信息。
+
+#### Config
+
+- RecommandedConfig：由 RecommendedOptions 得到的。
+  - NewRecommendedConfig()：创建一个新的。
+  - Options.ApplyTo()：根据 Option 填充 Config 的完整配置信息。在这个方法中，甚至会进行自签名证书等重操作，而不是简单的将信息从 Option 复制给 Config。RecommendedOptions 会依次调用它的各个字段的 ApplyTo 方法，从而推导出 RecommendedConfig 的各个字段。
+- CompletedConfig：由 RecommendedConfig 的 Complete()方法生成的，再一次进行配置信息的推导，主要牵涉到 OpenAPI 相关的配置。
+  - New()：把一份完整的 Config 变成一个 Runtime server。
+- ExtraConfig：添加了额外的配置信息。
+
+#### Server
+
+- genericApiserver：kube-apierver 的核心类型是 genericapiserver，它是由 CompletedConfig 的 New() 方法生成的。CompletedConfig 的 New() 方法实例化 GenericAPIServer，这一步最关键的逻辑是安装 API 组。API 组定义了如何实现 GroupVersion 中 API 的增删改查，它将 GroupVersion 的每种资源映射到 registry.REST，后者具有处理 REST 风格请求的能力，并（默认）存储到 Etcd。
+  - PrepareRun()：安装一些 API。GenericApiserver 提供了一些钩子来处理 Admission 控制器的注册、初始化。以及另外一些钩子来对 apiserver 的生命周期事件做出响应。
+  - Run()：启动 server。
+
+#### 具体流程
+
+- New Options：创建options。
+- Add Flags：将命令行 flags 添加到 options 结构体中。
+- Init logs：初始化日志。
+- Complete Options：填充默认参数到 options。
+- Validate Options：验证options中所有参数。
+
+<img src="figures/image-20220804190826143.png" alt="image-20220804190826143" style="zoom:50%;" />
+
+#### kube-apiserver 示例
+
+<img src="figures/image-20220804190837112.png" alt="image-20220804190837112" style="zoom:50%;" />
+
+### 构建
+
+编译 Go 代码生成二进制文件
+
+#### 本地构建（推荐）
+
+```shell
+make all
+```
+
+#### 容器环境构建
+
+
+
+#### Bazel环境构建
+
+
 
 ### apimachinery
 
@@ -329,101 +274,6 @@ runtime.Object 是 k8s 的通用资源类型，k8s 上的所有 resource object 
 Serializer 包含序列化和反序列化操作。序列化将数据结构转换为字符串，而反序列化将字符串转换为数据结构，这样可以轻松地维护并存储、传输数据结构。Codec 包含编码器和解码器，它比 serializer 更为通用，指将一种数据结构转换为特定的格式的过程。所以，可以将 serializer 理解为一种特殊的 codec。
 
 k8s 的 codec 包含 3 种 serializer：jsonSerializer、yamlSerializer、protobufSerializer。
-
-#### Scheme
-
-GVK <--> Type
-
-
-
-#### RESTMapper
-
-GVR <--> GVK
-
-
-
-## 代码
-
-### Layout
-
-
-
-### Option&Config
-
-`k8s.io/apiserver`库使用 option&config 模式来创建一个可运行的 apiserver，对 Config、Option、Server 等对象都做了一层包装，不需要关注这些 wrapper。Option 不会存储 Runtime 的数据结构，它通常只在启动时使用，然后就换转换成 Config，再由 Config 转换成 Runtime 用于在运行时使用。
-
-#### Option
-
-- RecommendedOptions：对应了用户提供的各类选项（外加所谓推荐选项，降低使用时的复杂度），如 Etcd 地址、Etcd 存储前缀、apiserver 的基本信息等。
-  - Validate()：校验。
-  - Complete()：自动设置默认值。
-  - Config()：转换成 Config。
-- CustomServerOptions：嵌入了 RecommendedOptions，并添加了一些额外的信息。
-
-#### Config
-
-- RecommandedConfig：由 RecommendedOptions 得到的。
-  - NewRecommendedConfig()：创建一个新的。
-  - Options.ApplyTo()：根据 Option 填充 Config 的完整的配置信息。在这个方法中，甚至会进行自签名证书等重操作，而不是简单的将信息从 Option 复制给 Config。RecommendedOptions 会依次调用它的各个字段的 ApplyTo 方法，从而推导出RecommendedConfig的各个字段。
-- CompletedConfig：由 RecommendedConfig 的 Complete()方法生成的，再一次进行配置信息的推导，主要牵涉到 OpenAPI 相关的配置。
-  - New()：把一份完整的 Config 变成一个 Runtime server。
-- ExtraConfig：添加了额外的配置信息。
-
-#### Server
-
-- genericApiserver：apierver 的核心类型是 genericapiserver，它是由 CompletedConfig 的 New() 方法生成的。CompletedConfig 的 New 方法实例化 GenericAPIServer，这一步最关键的逻辑是安装 API 组。API 组定义了如何实现GroupVersion 中 API 的增删改查，它将 GroupVersion 的每种资源映射到 registry.REST，后者具有处理 REST 风格请求的能力，并（默认）存储到 Etcd。
-  - PrepareRun()：安装一些 API。GenericApiserver 提供了一些钩子来处理 Admission 控制器的注册、初始化。以及另外一些钩子来对 apiserver 的生命周期事件做出响应。
-  - Run()：启动 server。
-
-#### 具体流程
-
-- New Options：创建options
-- Add Flags：将命令行flag添加到options结构体中
-- Init logs：初始化日志
-- Complete Options：填充默认参数到options
-- Validate Options：验证options中所有参数
-
-<img src="figures/image-20220804190826143.png" alt="image-20220804190826143" style="zoom:50%;" />
-
-#### kube-apiserver 示例
-
-<img src="figures/image-20220804190837112.png" alt="image-20220804190837112" style="zoom:50%;" />
-
-
-
-### 构建
-
-编译Go代码生成二进制文件
-
-#### 本地构建（推荐）
-
-```shell
-make all
-```
-
-
-
-#### 容器环境构建
-
-
-
-#### Bazel环境构建
-
-
-
-## 高阶
-
-### Reconciler
-
-#### 参数
-
-- Concurrence：具体启多少个 Reconciler，每个 Reconciler 每次只能处理一个 event。
-
-#### 函数
-
-- predict()：指明哪些 event 会触发 Reconciler。
-
-
 
 ## Lab
 

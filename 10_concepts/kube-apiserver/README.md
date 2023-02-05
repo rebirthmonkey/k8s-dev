@@ -4,27 +4,27 @@
 
 kube-apiserver：
 
-- 将 k8s 的所有资源对象封装成 REST 风格的 API 接口进行管理
-- 将集群的所有数据和状态存户的 Etcd 中
-- 提供丰富的安全访问机制，包括认证、授权及准入控制（admission control）
-- 提供了集群各组件间的通讯和交互功能
+- 将 k8s 的所有资源对象封装成 REST 风格的 API 接口进行管理。
+- 将集群的所有数据和状态存户的 Etcd 中。
+- 提供丰富的安全访问机制，包括认证、授权及准入控制（admission control）。
+- 提供了集群各组件间的通讯和交互功能。
 
 k8s 基于 go-restful 框架，因为其具有很好的可定制化性。
 
-### 架构
+## 架构
 
-k8s 内包含 3 个独立的 HTTP server，用于将功能进行解耦，分别是：
+k8s 内包含 3 个独立的 server，用于将功能进行解耦，分别是：
 
 - kube-aggregator：以下 3 个 server 的 proxy。而代理 API 请求到 apiextension-server 的过程被称为 API aggregation。
-- APIExtensionServer：提供了 CRD 的自定义资源服务，并通过apiextensionserver.Scheme 注册管理 CRD 相关资源。
-- KubeAPIServer：k8s 内置核心资源服务，并通过 legacyscheme.Scheme 注册管理资源。
+- kube-apiserver：k8s 内置核心资源服务，并通过 legacyscheme.Scheme 注册管理资源。
+- APIExtensionServer：提供了 CRD 的自定义资源服务，并通过 apiextensionserver.Scheme 注册管理 CRD 相关资源。
 - AggregatorServer：对 k8s 进行扩展，并通过 aggregatorscheme.Scheme 注册管理相关资源。
 
 其中 APIExtensionServer 和 AggregatorServer 都可以在不修改 k8s 核心代码的前提下扩展 k8s 的资源。但这 3 个 server 都是基于 GenericAPIServer 实现。
 
 <img src="figures/image-20220807184929435.png" alt="image-20220807184929435" style="zoom:50%;" />
 
-### 启动流程
+## 启动流程
 
 - 注册资源：将所支持的 resource 注册到 scheme（三个 server 分别有各自的 scheme）中。它是通过 pkg 的 init() 来实现的，调用了 k8s 各个资源下的 install 包。
 - Cobra 命令行参数解析：通过 NewServerRunOptions() 初始化 options 结构，通过 Complete() 填充默认参数，通过 Validate() 验证参数的合法性，最后通过 Run() 将参数传入组件启动逻辑。
@@ -58,13 +58,10 @@ k8s 内包含 3 个独立的 HTTP server，用于将功能进行解耦，分别�
 
 ### 整体
 
-- 请求经过处理链（Handler Chain）：三个 server 共用 kube-apiserver 的处理链，包括 HTTP Handler 处理（日志审计、切换用户、限流）、Authentication 身份认证、Authorization 授权、Admission 准入（拦截 HTTP 请求，进行校验、修改或拒绝等操作）
-- 拦截请求：由 kube-aggregator 进行拦截，如对 `/apis/aggregated-API-group-name` 路径下的请求进行拦截
-- 转发请求：由 kube-aggregator 将拦截的请求转发给相应的 server
+- 请求经过 Handler Chain：三个 server 共用 kube-apiserver 的 Hanlder Chain，包括 HTTP Handler 处理（日志审计、切换用户、限流）、Authentication 身份认证、Authorization 授权、Admission 准入（拦截 HTTP 请求，进行校验、修改或拒绝等操作）。
+- 拦截/转发请求：由 kube-aggregator 进行拦截，如对 `/apis/aggregated-API-group-name` 路径下的请求进行拦截。并且由 kube-aggregator 将拦截的请求转发给相应的 server。
 
 ### HTTP Handler/Filter
->>>>>>> 3b0e7446ee17868c75c69c582eaea34b1eb491af
-
 - WithPanicRecovery()
 - WithRequestInfo()
 - WithWaitGroup()
@@ -145,9 +142,9 @@ Initializer 也是一个 controller，实时查看用户给 APIServe的请求，
 
 admission controller是一组标准的控制器，拦截API请求，进行请求验证/修改。admission webhook就是由这些控制器调用的，运行在k8s外部的http服务，用来实现修改、验证等逻辑。因为这部分check牵涉到“业务逻辑”，不适合编写在k8s里面，所以采用动态扩展、可拔插的模式。
 
-## K8S Proxy API
+## K8s Proxy API
 
-kube-apiserver把收到的REST request转发到某个node的kubelet的REST端口上，通过k8s proxy API获得的数据来自node而非etcd。
+一般情况下，kube-apiserver 把收到的 REST request 转发到某个 node 的 kubelet 的 REST 端口上。当使用 k8s proxy API 时，获得的数据直接来自 node 而非 Etcd，因此它绕过了以下步骤：
 
 - Authentication：
 
@@ -167,4 +164,3 @@ kube-apiserver把收到的REST request转发到某个node的kubelet的REST端口
 ## Ref
 
 1. [深入理解 Kubernetes Admission Webhook](https://www.toutiao.com/article/6712393368413929995)
-2. 

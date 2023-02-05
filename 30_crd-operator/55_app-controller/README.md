@@ -1,4 +1,4 @@
-# App-controller
+# Sample Controller/Controller
 
 ## 简介
 

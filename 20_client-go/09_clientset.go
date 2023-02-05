@@ -21,7 +21,6 @@ func main() {
 		fmt.Println("connect k8s success!")
 	}
 
-	//获取POD
 	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		fmt.Println(err)

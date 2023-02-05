@@ -1,6 +1,6 @@
 # controller-tools
 
-基于先前的 code-generator，controller-tools 进一步自动化 type.go 文件及 CRD yaml 文件的生成。
+基于先前的 code-generator，controller-tools 进一步优化 type.go 文件和 CRD yaml 文件的自动生成。
 
 ## Lab
 

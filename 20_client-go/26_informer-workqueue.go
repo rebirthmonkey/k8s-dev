@@ -11,20 +11,16 @@ import (
 )
 
 func main() {
-
-	// create config
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
 		panic(err)
 	}
 
-	// create clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	// create informer
 	factory := informers.NewSharedInformerFactory(clientset, 0)
 	informer := factory.Core().V1().Pods().Informer()
 

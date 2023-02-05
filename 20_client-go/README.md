@@ -1,6 +1,17 @@
 # client-go
 
-通常不会直接向 kube-apiserver 发请求，而是通过 client-go 提供的编程接口。client-go 提供了缓存功能，避免反复从 kube-apiserver 获取数据。k8s 的主要 Go 编程接口赖在 `k8s.io/client-go` 这个库，它是一个典型的 web 客户端库，可以用于调用对应的 k8s 集群对应的 API，实现常用的 REST 动作。
+通常不会直接向 kube-apiserver 发请求，而是通过 client-go 提供的编程接口。k8s 的主要 Go 编程接口赖在 `k8s.io/client-go` 这个库，它是一个典型的 web 客户端库，可以用于调用对应的 k8s 集群对应的 API，实现常用的 REST 动作。client-go 提供了缓存功能，避免反复从 kube-apiserver 获取数据。
+
+基于 client-go 的 controller 用来实现真正的 k8s 业务逻辑。其中，client-go 负责与 apiserver 通信，获取 API resource 的状态信息，其具体模块包括：
+- Informer：从 DeltaFIFO 取出 API 对象，根据事件的类型来创建、更新或删除本地缓存。Informer 另一方面可以调用注册的 Event Handler 把 API 对象发送给对应的 controller。
+  - reflector：维护与 APIServer 的连接，使用 ListAndWatcher方法来监听对象的变化，并把该变化事件及对应的 API 对象存入 DeltaFIFO 队列中。
+- Indexer：使用线程安全的数据存储来缓存 API 对象及其值，为 controller 提供数据索引功能。
+
+基于 client-go 的 controller 用来维护 API 对象的期望状态：
+- 把事件对应的 API 对象存入 workQueue 中，这里存储的只是 API 对象的 key，value 会基于 key 去 Indexer 缓存中拉取。
+- 进入 Reconciler Loop：获取到 API 对象后则会根据 API 对象描述的期望状态与集群中的实际状态进行比对、协调，最终达到期望状态。
+
+![image-20230205131453908](figures/image-20230205131453908.png)
 
 ## Client
 
@@ -22,7 +33,7 @@ RESTClient 是最基础的客户端，它对 HTTP Request 进行了封装，实�
 
 ### ClientSet
 
-ClientSet 在 RESTClient 的基础上封装了对 Resource 和 Version 的管理方法（不需要再在RESTClient 中配置 API、Group、Version 等与 resource 相关的信息）。每个 resource 可以理解为一个客户端，而 ClientSet 则是多个客户端的集合，可以让用户同时访问多个 resource。一般情况下，对 k8s 的二次开发使用 ClientSet，但 ClientSet 只能处理 k8s 的内置资源。
+ClientSet 在 RESTClient 的基础上封装了对 Resource 和 Version 的管理方法（不需要再在 RESTClient 中配置 API、Group、Version 等与 resource 相关的信息）。每个 resource 可以理解为一个客户端，而 ClientSet 则是多个客户端的集合，可以让用户同时访问多个 resource。一般情况下，对 k8s 的二次开发使用 ClientSet，但 ClientSet 只能处理 k8s 的内置资源。
 
 ### DynamicClient
 
@@ -165,8 +176,6 @@ Indices:{
 
 - Index：包含了索引键以及索引键下的所有对象键的列表。
 
-
-
 ### WorkQueue
 
 HandlerDelta 中注册的 Handler 通过回调函数接收到对应的 event 之后，需要将对应的 ObjKey 放入 WorkQueue 中，从而方便并行的多个 worker 去消费。使用 workQueue 的优势包括：
@@ -207,18 +216,16 @@ controller 可以对 k8s 的核心资源（如 pod、deployment）等进场操�
 一般而言，一个 controller 包含：
 
 - 一个 clientset：用于调用远程的 kube-apiserver
-- 一或多个 informer：每个 informer 监控一种资源
+- 一或多个 Informer：每个 informer 监控一种资源
 - 一个 WorkQueue：用于异步接受 event
 - 一个 Indexer：用于本地缓存 Etcd 中资源的信息
 - 一个 Worker：真正的业务处理逻辑
-
-
 
 ### Worker
 
 controller 的 Run() 函数通过 runWorker() 函数持续不断地执行 processWorkItem() 函数，最终的业务逻辑会在 syncHandler() 函数中实现。
 
-#### 控制循环
+#### Reconciler 控制循环
 
 - 读取资源的状态：通常采用事件驱动模式
 - 改变资源的状态：
@@ -230,11 +237,11 @@ controller 的 Run() 函数通过 runWorker() 函数持续不断地执行 proces
 总体来说，需要自定义的代码只有：
 
 1. 添加 Handler 回调函数：调用`AddEventHandler`，添加相应的逻辑处理`AddFunc`、`DeleteFunc`、`UpdateFun`。
-2. 实现 worker 逻辑：从 workqueue 中消费 ObjKey 即可。
+2. 实现 Worker 逻辑：从 workqueue 中消费 ObjKey 即可。
 
 ## Lab
 
-### 客户端
+### Client
 
 - 启动一个 pod：`kubectl run test --image=nginx --image-pull-policy=IfNotPresent`
 

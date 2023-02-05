@@ -1,4 +1,4 @@
-# App
+# Sample Controller/App
 基于 k8s 社区的例子 [sample controller](https://github.com/kubernetes/sample-controller) 改造而成的 app。
 
 ## Lab
