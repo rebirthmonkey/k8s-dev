@@ -1,0 +1,8 @@
+apiVersion: demo.wukong.com/v1
+kind: Banana
+metadata:
+  name: bananatest
+  namespace: default
+spec:
+  source: ali-123
+  dest: tx-123

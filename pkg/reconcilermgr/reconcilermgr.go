@@ -11,6 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	crmgr "sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
 )
 
 type ReconcilerManager struct {
@@ -103,6 +105,9 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 		log.Error("[ReconcilerManager] unable to start manager")
 		os.Exit(1)
 	}
+
+	// Add all PM GV-Type pairs to the scheme
+	apis.AddToScheme(scheme)
 
 	rmgr.Manager = mgr
 	rmgr.Client = mgr.GetClient()

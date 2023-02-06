@@ -91,7 +91,7 @@ func main() {
 
 	if err = (&controllers.AtReconciler{
 		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Scheme: scheme,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "At")
 		os.Exit(1)

@@ -6,22 +6,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
-  name: redismigrations.database.wukong.com
+  name: bananas.demo.wukong.com
 spec:
-  group: database.wukong.com
+  group: demo.wukong.com
   names:
-    kind: RedisMigration
-    listKind: RedisMigrationList
-    plural: redismigrations
+    kind: Banana
+    listKind: BananaList
+    plural: bananas
     shortNames:
-    - rm
-    singular: redismigration
+    - ba
+    singular: banana
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: RedisMigration is the Schema for the RedisMigration API.
+        description: Banana is the Schema for the Banana API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -36,7 +36,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: RedisMigrationSpec defines the desired state of RedisMigration
+            description: BananaSpec defines the desired state of Banana
             properties:
               dest:
                 type: string
@@ -47,7 +47,7 @@ spec:
             - source
             type: object
           status:
-            description: RedisMigrationStatus defines the observed state of RedisMigration
+            description: BananaStatus defines the observed state of Banana
             properties:
               destStatus:
                 additionalProperties:

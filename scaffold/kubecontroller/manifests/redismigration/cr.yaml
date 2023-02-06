@@ -1,8 +1,0 @@
-apiVersion: database.wukong.com/v1
-kind: RedisMigration
-metadata:
-  name: rmtest
-  namespace: default
-spec:
-  source: ali-123
-  dest: tx-123

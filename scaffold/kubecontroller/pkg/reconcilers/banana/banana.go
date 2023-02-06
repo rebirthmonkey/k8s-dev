@@ -1,10 +1,9 @@
-package redismigration
+package banana
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"reflect"
 	"strings"
 	"time"
@@ -16,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	controllerapis "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
-	databasev1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/database/v1"
+	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
 )
 
 const (
@@ -32,34 +31,33 @@ var (
 )
 
 func init() {
-	apis.SetPhaseMachine(controllerapis.ResourceRedisMigrations, PhaseMachineDef)
+	apis.SetPhaseMachine(controllerapis.ResourceBananas, PhaseMachineDef)
 	registry.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
-		utilruntime.Must(databasev1.AddToScheme(rmgr.GetScheme()))
-		rmgr.WithPhaseMachine(&databasev1.RedisMigration{}, pm.New(PhaseMachineDef()))
+		rmgr.WithPhaseMachine(&demov1.Banana{}, pm.New(PhaseMachineDef()))
 		return nil
 	})
 }
 
 func PhaseMachineDef() *pm.DefaultDef {
 	def := &pm.DefaultDef{
-		ResourceType:   reflect.TypeOf(&databasev1.RedisMigration{}),
+		ResourceType:   reflect.TypeOf(&demov1.Banana{}),
 		RequeueDefer:   5 * time.Second,
 		InitialPhase:   Init,
 		TerminalPhases: TerminalPhases,
 		FailedPhases:   FailedPhases,
 		FetchResourceFunc: func(ctx context.Context, key string) (pm.Resource, error) {
 			cli := ctx.Value(apis.ContextKeyClient).(client.Client)
-			obj := &databasev1.RedisMigration{}
+			obj := &demov1.Banana{}
 			err := cli.Get(ctx, pm.ParseNamespacedName(key), obj)
 			return obj, err
 		},
 		PersistStatusFunc: func(ctx context.Context, res pm.Resource) error {
 			cli := ctx.Value(apis.ContextKeyClient).(client.Client)
-			obj := res.(*databasev1.RedisMigration)
+			obj := res.(*demov1.Banana)
 			return cli.Status().Update(ctx, obj)
 		},
 		SetPhaseFunc: func(res pm.Resource, phase pm.Phase) {
-			obj := res.(*databasev1.RedisMigration)
+			obj := res.(*demov1.Banana)
 			obj.Status.Phase = phase
 		},
 		NormalTrans: map[pm.Phase]pm.Phase{
@@ -72,8 +70,8 @@ func PhaseMachineDef() *pm.DefaultDef {
 		},
 		Handlers: map[pm.Phase]pm.Handler{
 			Init: pm.HandlerFunc(func(ctx context.Context, res pm.Resource, last pm.State) (rstate pm.ReconcileState) {
-				obj := res.(*databasev1.RedisMigration)
-				fmt.Printf("准备为迁移%s初始化源和目标信息\n", obj.Name)
+				obj := res.(*demov1.Banana)
+				fmt.Printf("准备为 %s 开始\n", obj.Name)
 
 				if obj.Spec.Source != "" {
 					obj.Status.SourceStatus = map[string]string{
@@ -92,16 +90,16 @@ func PhaseMachineDef() *pm.DefaultDef {
 				return
 			}, pm.Metadata{}),
 			Migrate: pm.HandlerFunc(func(ctx context.Context, res pm.Resource, last pm.State) (rstate pm.ReconcileState) {
-				obj := res.(*databasev1.RedisMigration)
+				obj := res.(*demov1.Banana)
 				if obj.Status.SourceStatus == nil || obj.Status.DestStatus == nil {
-					reason := "源或者目标信息缺失，迁移失败"
+					reason := "Banana信息缺失，执行失败"
 					fmt.Printf(reason + "\n")
 					rstate.Error = errors.New(reason)
 					return
 				}
-				fmt.Printf("正在迁移Redis实例……\n")
+				fmt.Printf("正在执行Banana……\n")
 				time.Sleep(time.Second * 30)
-				fmt.Printf("Redis实例%s成功迁移至%s\n", obj.Status.SourceStatus["name"], obj.Status.DestStatus["name"])
+				fmt.Printf("Banana%s执行成功%s\n", obj.Status.SourceStatus["name"], obj.Status.DestStatus["name"])
 
 				rstate.Done = true
 				return

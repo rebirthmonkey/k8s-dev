@@ -1,4 +1,4 @@
-package database
+package demo
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	GroupName = "database.wukong.com"
+	GroupName = "demo.wukong.com"
 )
 
 var (

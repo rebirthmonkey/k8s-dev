@@ -1,17 +1,17 @@
 package kubecontroller
 
 import (
+	"os"
+
 	"github.com/rebirthmonkey/go/pkg/log"
-	rmgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
-	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime"
-	"os"
 
 	"github.com/rebirthmonkey/k8s-dev/pkg/apiextmgr"
 	amgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/apiextmgr/registry"
 	k8sclient "github.com/rebirthmonkey/k8s-dev/pkg/k8s/client"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
+	rmgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 )
 
 var (
@@ -48,7 +48,6 @@ func NewKubeController(opts *Options) (*KubeController, error) {
 // PrepareRun creates a running manager instance after complete initialization.
 func (mgr *KubeController) PrepareRun() *PreparedKubeController {
 	log.Info("[KubeController] PrepareRun")
-	apis.AddToScheme(scheme)
 	preparedReconcilerMgr := mgr.ReconcilerManager.PrepareRun(scheme)
 	preparedAPIExtMgr := mgr.APIExtManager.PrepareRun()
 	k8sclients := k8sclient.NewClientsManager(scheme, "", "")

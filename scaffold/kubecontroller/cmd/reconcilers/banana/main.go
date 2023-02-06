@@ -6,7 +6,7 @@ import (
 
 	"github.com/rebirthmonkey/k8s-dev/pkg/kubecontroller"
 	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/apiexts/all"
-	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilers/redismigration"
+	_ "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/pkg/reconcilers/banana"
 )
 
 func main() {
