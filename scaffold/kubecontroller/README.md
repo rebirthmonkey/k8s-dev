@@ -208,37 +208,44 @@ go run cmd/hub/main.go --config ./configs/kubecontroller.yaml
 
 ### 单个PMReconciler
 
+因为 Reconciler 本质是基于 event，在不同的 state 之前流转（state machine），因此可以基于 Reconciler 设计一个 State Machine 的框架，方便不同状态间的流转，也就是 PM（PhaseMachine）框架。PM 其实是在 k8s 的 controller-runtime 外封装一层，添加了不同 phase 的数据结构。
+
+基于 PM 实现的 Reconciler，需要在 Reconcile() 方法中处理各个 phase 的状态流转。Phase 建模建议包含以下状态：
+
+- Pending/Initializing/Uninitialized：在此阶段，收集初始化信息。
+- Precheck/PreFlight/DryRun：在此阶段，进行一些预检。
+- Migrate/InFlight/Run：在此阶段，执行实际的业务逻辑。
+- PreFailed：终止状态，表示预检阶段失败。
+- Failed：终止状态，表示业务逻辑阶段失败。
+- Succeeded：终止状态，表示业务逻辑成功。
+
+在具体开发 Reconciler 时，每个 Phase 对应一个 Handler 处理函数，处理函数驱动 Phase 之间的变换。开发新的 Reconciler，实际上就是实例化一个 PhaseMachine 结构，并提供 1/ Phase 建模、2/ 状态转换矩阵、3/ Phase 处理函数。
+
+通常需要为每个 Reconciler 对应一个独立的包，并在此包中对 PhaseMachine 做一层简单的 wrapper。这个 wrapper 的目的是传入一些控制参数、上下文对象。
+
+具体关于 PhaseMachine 见[此](docs/phasemachine.md)。
+
 #### 运行
 
-以 redismigrations 为例： 
+以 bananas 为例： 
 
 - 将 context 转到对应的 k8s 集群
 - 注册 CRD
 
 ```bash
-kubectl apply -f chart/crds/database.cloud.tencent.com_redismigrations.yaml
+kubectl apply -f chart/crds/demo.cloud.tencent.bananas.yaml
 ```
 
 - 单独启动 Reconciler：
 
 ```bash
-# 如果KUBECONFIG存放在非默认位置，请指定 --kubeconfig 命令行选项
-go run cmd/controllers/redismigration/main.go --zap-log-level=4 --config=config/teleport.yaml
+go run cmd/controllers/banana/main.go -c=configs/kubecontroller.yaml
 ```
 
 - 创建 CR 资源测试 Reconciler：
 
 ```bash
-kubectl apply -f - <<EOF
-apiVersion: database.cloud.tencent.com/v1
-kind: RedisMigration
-metadata:
-  name: rmtest
-  namespace: default
-spec:
-  source: ali-123
-  dest: tx-123
-EOF
+kubectl apply -f chart/crds/cr.yaml
 ```
 
 ## APIExt
@@ -306,23 +313,6 @@ kubectl -s http://127.0.0.1:6080 -n default get users
 基于 JavaScript、React 等的真正前端。
 
 ## 扩展机制
-
-### PhaseMachine
-
-因为 Reconciler 本质是基于 event，在不同的 state 之前流转（state machine），因此可以基于 Reconciler 设计一个 State Machine 的框架，方便不同状态间的流转，也就是 PM（PhaseMachine）框架。PM 其实是在 k8s 的 controller-runtime 外封装一层，添加了不同 phase 的数据结构。
-
-基于 PM 实现的 Reconciler，需要在 Reconcile() 方法中处理各个 phase 的状态流转。Phase 建模建议包含以下状态：
-
-- Pending/Initializing/Uninitialized：在此阶段，收集初始化信息。
-- Precheck/PreFlight/DryRun：在此阶段，进行一些预检。
-- Migrate/InFlight/Run：在此阶段，执行实际的业务逻辑。
-- PreFailed：终止状态，表示预检阶段失败。
-- Failed：终止状态，表示业务逻辑阶段失败。
-- Succeeded：终止状态，表示业务逻辑成功。
-
-在具体开发 Reconciler 时，每个 Phase 对应一个 Handler 处理函数，处理函数驱动 Phase 之间的变换。开发新的 Reconciler，实际上就是实例化一个 PhaseMachine 结构，并提供 1/ Phase 建模、2/ 状态转换矩阵、3/ Phase 处理函数。
-
-通常需要为每个 Reconciler 对应一个独立的包，如 reconcilers/pmdemo，并在此包中对 PhaseMachine 做一层简单的 wrapper。这个 wrapper 的目的是传入一些控制参数、上下文对象。
 
 ### 流程引擎
 
