@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -13,6 +14,10 @@ var (
 	AddToScheme           = schemeBuilder.AddToScheme
 	AddInternalToScheme   = internalSchemeBuilder.AddToScheme
 )
+
+func init() {
+	reconcilermgr.AddToScheme = schemeBuilder.AddToScheme
+}
 
 type groupVersion struct {
 	schema.GroupVersion
