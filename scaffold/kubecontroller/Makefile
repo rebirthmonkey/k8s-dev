@@ -35,12 +35,18 @@ version:
 ## run: Run the whole application.
 .PHONY: run
 run:
-	@$(MAKE) go.run.manager
+	@$(MAKE) go.run.hub
 
 .PHONY: run.%
 run.%:
 	@$(MAKE) go.run.$*
 
+BUILD_NETWORK ?= --network=host
+BUILD_ARGS ?= --build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT)
+
+.PHONY: docker-build
+docker-build:
+	docker build -t ${HUB_IMAGE} ${BUILD_ARGS} ${BUILD_NETWORK} -f build/dockerfile/hub/Dockerfile .
 
 ## clean: Remove all files that are created by building.
 .PHONY: clean

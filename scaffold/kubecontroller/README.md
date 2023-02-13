@@ -206,48 +206,6 @@ kubectl apply -f manifests/...
 go run cmd/hub/main.go --config ./configs/kubecontroller.yaml
 ```
 
-### 单个PMReconciler
-
-因为 Reconciler 本质是基于 event，在不同的 state 之前流转（state machine），因此可以基于 Reconciler 设计一个 State Machine 的框架，方便不同状态间的流转，也就是 PM（PhaseMachine）框架。PM 其实是在 k8s 的 controller-runtime 外封装一层，添加了不同 phase 的数据结构。
-
-基于 PM 实现的 Reconciler，需要在 Reconcile() 方法中处理各个 phase 的状态流转。Phase 建模建议包含以下状态：
-
-- Pending/Initializing/Uninitialized：在此阶段，收集初始化信息。
-- Precheck/PreFlight/DryRun：在此阶段，进行一些预检。
-- Migrate/InFlight/Run：在此阶段，执行实际的业务逻辑。
-- PreFailed：终止状态，表示预检阶段失败。
-- Failed：终止状态，表示业务逻辑阶段失败。
-- Succeeded：终止状态，表示业务逻辑成功。
-
-在具体开发 Reconciler 时，每个 Phase 对应一个 Handler 处理函数，处理函数驱动 Phase 之间的变换。开发新的 Reconciler，实际上就是实例化一个 PhaseMachine 结构，并提供 1/ Phase 建模、2/ 状态转换矩阵、3/ Phase 处理函数。
-
-通常需要为每个 Reconciler 对应一个独立的包，并在此包中对 PhaseMachine 做一层简单的 wrapper。这个 wrapper 的目的是传入一些控制参数、上下文对象。
-
-具体关于 PhaseMachine 见[此](docs/phasemachine.md)。
-
-#### 运行
-
-以 bananas 为例： 
-
-- 将 context 转到对应的 k8s 集群
-- 注册 CRD
-
-```bash
-kubectl apply -f chart/crds/demo.cloud.tencent.bananas.yaml
-```
-
-- 单独启动 Reconciler：
-
-```bash
-go run cmd/controllers/banana/main.go -c=configs/kubecontroller.yaml
-```
-
-- 创建 CR 资源测试 Reconciler：
-
-```bash
-kubectl apply -f chart/crds/cr.yaml
-```
-
 ## APIExt
 
 因为除了 k8s 风格的 API 接口外，有时需要采用传统的 REST 风格的接口，因此在 kubecontroller 设计的时候，同时采用了基于 Gin 的 APIExt 接口，用于简化 k8s 接口。每个 k8s 风格的 API 前都会架一个 简化的 Gin API。
@@ -314,40 +272,49 @@ kubectl -s http://127.0.0.1:6080 -n default get users
 
 ## 扩展机制
 
-### 流程引擎
+### Workflow
 
 #### 基本概念
 
-- WorkflowDefinition：流程模板
-  - Object：流程模板中的元素
-    - Event：Start、Waiting、Pending、Doing、End（Succeeded、Failed、Aborted）
-    - Activity：可以注册不同的 ActivityExecutor Type，用来实现不同的 Activity 类型
-      - Executor：对流程中具体执行内容的封装，可是是 KubeController、Binary 等
+- WorkflowDefinition：流程模板，对应 typs.go 中的 Spec
+  - DAG：有向无环图，由 Object（流程模板中的元素）组成，Object 具体分为：
+    - Event：
+      - Start：
+      - Waiting：做一些 pre-check 以及初始化配置
+      - Pending：
+      - Doing：真正开始执行 execte()
+      - End：Succeeded、Failed、Aborted
+  
     - Gateway：
-- WorkflowExecution：运行中的流程实例，记录流程当前执行的状态
-  - Entry：流程执行过程中的元素，
-- Engine：具体执行 workflow 的 Engine。
+      - 分散：根据判断条件选择不同分支
+      - 聚合：多个分支聚合到一起
+  
+    - Activity：可以注册不同的 ActivityExecutor Type，来实现不同的 Activity 类型
+      - Executor：对流程中具体执行内容的封装，如 KubeController、Binary 等
+- WorkflowExecution：运行中的流程实例，记录流程当前执行的状态，对应 types.go 中的 Status
+  - DAG：
+  - Entry：流程执行过程中的元素，Definition 中 Object 的实例化。
+    - Phase：运行时 DAG 实时流转的状态，对应 Object/Event
+    - Reason：对 entry 状态的解释
+    - FinishTime：结束时间00
+- Engine：具体执行 workflow 的 Executor 的接口
+  - EngineExecutor：Engine 接口的实现
+    - Config：配置项
+    - WDDAG：模板 DAG
+    - WEDAG：运行 DAG
+      - initExecutionDAG()：
+
+    - ActivityExecutor 注册表：在本 Engine 中已经注册的 ActivityExecutor Type，实际实现中所有 Type 都注册。
+      - WithActivityExecutors()：将  ActivityExecutor Type 加入注册表中。
+
+    - Execute()：真正的执行
+
+  - Result：Engine 运行后的结果
+    - Updated：是否更新
+    - Failed：是否运行失败
 
 
 
 
 
-## Tmp
-
-### 运行单个 Reconciler
-
-- XXX 启动 web backend
-
-```bash
-go run web/backend/main.go --user-config config/teleport-web.yaml
-```
-
-- 启动 web frontend：修改 proxy['/wapi'] 中的 target 到正确的地址，指向 127.0.0.1:6081。
-
-```bash
-npm install --registry=https://mirrors.tencent.com/npm/
-npm run dev
-```
-
-- 本地浏览器访问：`http://127.0.0.1:8000`，默认的用户名密码是 `admin:teleport`。
 
