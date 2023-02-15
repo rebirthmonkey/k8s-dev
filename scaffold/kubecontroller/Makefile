@@ -3,7 +3,7 @@
 # Build options
 
 ROOT_PACKAGE=~/workspace/k8s-dev/scaffold/kubecontroller
-VERSION_PACKAGE=github.com/rebirthmonkey/k8s-dev/scaffold/pkg/version
+VERSION_PACKAGE=github.com/rebirthmonkey/go/pkg/version
 
 # ==============================================================================
 # Includes
