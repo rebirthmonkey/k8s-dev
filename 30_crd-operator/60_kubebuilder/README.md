@@ -1,6 +1,8 @@
 # kubebuilder
 
-kubebuilder 为创建一个 Operator 搭建好了一套完整的代码框架，生成了一堆文件，涵盖了自定义 controller 的代码和一个示例 CRD。对于开发者来说，只需要实现`Reconcile()` 方法，即 `sample-controller`中的`syncHandler`，其他步骤`kubebuilder`已经帮着实现了。【1】
+kubebuilder 为创建一个 Controller/Operator 搭建好了一套完整的代码框架，生成了一堆文件，涵盖了自定义 controller 的代码和一个示例 CRD。对于开发者来说，只需要实现`Reconcile()` 方法，即 `sample-controller`中的`syncHandler`，其他步骤`kubebuilder`已经帮着实现了。【1】
+
+大部分 Controller 的开发会直接基于 kubebuilder，而不是使用到之前介绍的 Controller 模式。
 
 ## controller-runtime
 
@@ -10,9 +12,11 @@ controller-runtime 库包含若干 Go 库，用于快速构建（controller-mana
 
 controller-runtime 由 Manager（等价于 k8s 的 controller-manager）串联起来，用于启动（Manager.Start） controller，并且管理被多个 controller 依赖的组件（其中 Client 与 Cache 共同又被称作 Cluster）：
 
-- Cache：Cache 实际是 client-go 中 Informer 的包装，为读客户端提供本地缓存，支持监听更新缓存的事件。如 DelegatingClient 从 Cache 中读取（Get/List），而写入请求（Create/Update/Delete）则直接发送给 kube-apiserver，随着缓存的更新，读操作会达成最终一致。使用 Cache 可以大大减轻 kube-apiserver 的压力。
-- Client：Client 是对 client-go 中 clientSet 的封装，用于实现针对 kube-apiserver 的 CRUD 操作，读写客户端通常是分离（split）的。manager.Manager 会创建 client.Client。
-- Scheme：
+- Cluster：
+  - Cache：Cache 实际是 Controller 中 Informer 的包装，为读客户端提供本地缓存，支持监听更新缓存的事件。如 DelegatingClient 从 Cache 中读取（Get/List），而写入请求（Create/Update/Delete）则直接发送给 kube-apiserver，随着缓存的更新，读操作会达成最终一致。使用 Cache 可以大大减轻 kube-apiserver 的压力。
+  - Client：Client 是对 Controller 中 client 的封装，用于实现针对 kube-apiserver 的 CRUD 操作，读写客户端通常是分离（split）的。manager.Manager 会创建 client.Client。
+
+- Scheme：k8s GVK 的注册表。
 
 <img src="figures/image-20220608172034690.png" alt="image-20220608172034690" style="zoom:50%;" />
 
@@ -132,7 +136,7 @@ func init() {
 
 - 执行 Builder 内所有注册的 Callback 函数（AddToManager()）：所有注册的回调函数要延迟到 AddToManager() 的那一刻才真正执行。
 
-## 文件布局
+## Layout
 
 ### api/
 
@@ -256,11 +260,11 @@ func Resource(resource string) schema.GroupResource {
 
 这个文件是 __internal 版本、普通版本中的资源对应 Go Type struct 都需要生成的深拷贝函数。
 
-##开发流程
+## 开发流程
 
 以 xxx API resource 为例。
 
-### Scheme注册
+### scheme注册
 
 #### GVK
 
@@ -330,7 +334,7 @@ func init() {
 
 ##### AddToScheme添加
 
-同时，在 main() 中真正执行 `AddToScheme()` 将 Xxx Type 添加到 Scheme 中。
+同时，在 main() 中真正执行 `AddToScheme()` 将 Xxx Type 添加到 scheme 中。
 
 ```go
 utilruntime.Must(xxxv1.AddToScheme(scheme))
@@ -436,6 +440,8 @@ chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
 
 ### kubebuilder-demo
 
+#### 构建代码
+
 - 默认需求：go 1.8，kubebuilder 3.6.0
 - 初始化 kubebuilder
 
@@ -446,26 +452,42 @@ kubebuilder init \
 --repo github.com/rebirthmonkey/k8s-dev/kubebuilder-demo
 ```
 
-- 创建 API：创建对应的 controller
+- 创建 API：创建对应的 api/ 和 controllers/
 
 ```shell
 kubebuilder create api --group ingress --version v1 --kind App
 ```
 
-- 部署 CRD
+- 创建 manifests：在 config/crd/bases 中创建了对应 CRD 的 YAML 文件
+```shell
+make manifests
+```
+
+- 部署 CRD：将 CRD 部署到 k8s 集群中
+
 ```shell
 make install
 kubectl get crds
+make uninstall
+```
+
+- 在 api/v1/app_types.go 中添加代码：
+```shell
+# 本例中不添加额外代码
 ```
 
 - 在 controller/Reconcile() 中添加业务代码
+
 ```go
 _ = log.FromContext(ctx)
 fmt.Println("XXXXXXXX app changed", "ns", req.Namespace)
 return ctrl.Result{}, nil
 ```
 
-- 运行 operator
+#### Go进程运行
+
+- 运行 controller
+
 ```shell
 make run  
 ```
@@ -476,17 +498,33 @@ kubectl apply -f config/samples/ingress_v1_app.yaml
 kubectl delete -f config/samples/ingress_v1_app.yaml 
 ```
 
+#### 容器运行
+
 - 容器镜像打包
 
 ```shell
-export IMG=docker.io/xxx/yyy:v1
+export IMG=wukongsun/kubebuilder-demo:v1
 make docker-build
+```
+
+- 在 k8s 集群中部署、运行：在 config/ 目录下创建、渲染 YAML 文件，并执行。
+
+```shell
+make deploy
+make undeploy
+```
+
+- 上传镜像到镜像仓库：默认是到 dockerhub
+
+```shell
 make docker-push
 ```
 
+
+
 ### kubebuilder-at
 
-At 是个工具，用于在指定时间运行指定的命令，通过它的 schedule 和 command 2 个属性来设置。启动一个称为 AT 的 CR，在 AT 中 schedule 配置的 UTC 时间、执行在 CR 中 command 配置的命令。整个执行过程（CR 的 status）分为 3 个阶段：pending、running、done。
+AT 是个工具，用于在指定时间运行指定的命令，通过它的 schedule 和 command 2 个属性来设置。启动一个称为 AT 的 CR，在 AT 中 schedule 配置的 UTC 时间、执行在 CR 中 command 配置的命令。整个执行过程（CR 的 status）分为 3 个阶段：pending、running、done。
 
 - 创建脚手架
 

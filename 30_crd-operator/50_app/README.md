@@ -1,5 +1,5 @@
 # Sample Controller/App
-基于 k8s 社区的例子 [sample controller](https://github.com/kubernetes/sample-controller) 改造而成的 app，其原理是当创建一个 app 资源时，对应的创建 deployment、service 和 ingress 资源。
+基于 k8s 社区的例子 [sample controller](https://github.com/kubernetes/sample-controller) 改造而成的 app，其原理是当创建一个 app 资源时，对应的创建 deployment、service 和 ingress 资源，具体案例介绍看见 55_app-controller。
 
 ## Lab
 

@@ -1,8 +1,6 @@
 # Sample Controller/Controller
 
-## 简介
-
-基于 sample controller 样例来创建一个名为 App 的 CRD，然后由 controller 自动创建/删除 App 中定义的 deployment、service、ingress 资源对象。
+基于 sample controller 样例来创建一个名为 App 的 CRD，然后由 app-controller 自动创建/删除 App 中定义的 deployment、service、ingress 资源对象。
 
 <img src="figures/image-20220912133710917.png" alt="image-20220912133710917" style="zoom:50%;" />
 

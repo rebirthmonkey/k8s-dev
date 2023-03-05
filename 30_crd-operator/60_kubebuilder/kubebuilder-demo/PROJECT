@@ -2,7 +2,7 @@ domain: wukong.com
 layout:
 - go.kubebuilder.io/v3
 projectName: kubebuilder-demo
-repo: github.com/rebirthmonkey/kubebuilder-demo
+repo: github.com/rebirthmonkey/k8s-dev/kubebuilder-demo
 resources:
 - api:
     crdVersion: v1
@@ -11,6 +11,6 @@ resources:
   domain: wukong.com
   group: ingress
   kind: App
-  path: github.com/rebirthmonkey/kubebuilder-demo/api/v1
+  path: github.com/rebirthmonkey/k8s-dev/kubebuilder-demo/api/v1
   version: v1
 version: "3"

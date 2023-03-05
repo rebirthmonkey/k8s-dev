@@ -1,5 +1,5 @@
 /*
-Copyright 2022.
+Copyright 2023.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	ingressv1 "github.com/rebirthmonkey/kubebuilder-demo/api/v1"
-	"github.com/rebirthmonkey/kubebuilder-demo/controllers"
+	ingressv1 "github.com/rebirthmonkey/k8s-dev/kubebuilder-demo/api/v1"
+	"github.com/rebirthmonkey/k8s-dev/kubebuilder-demo/controllers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -71,18 +71,7 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "465bd3f6.wukong.com",
-		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
-		// when the APIExtManager ends. This requires the binary to immediately end when the
-		// APIExtManager is stopped, otherwise, this setting is unsafe. Setting this significantly
-		// speeds up voluntary leader transitions as the new leader don't have to wait
-		// LeaseDuration time first.
-		//
-		// In the default scaffold provided, the program ends immediately after
-		// the manager stops, so would be fine to enable this option. However,
-		// if you are doing or is intended to do any operation such as perform cleanups
-		// after the manager stops then its usage might be unsafe.
-		// LeaderElectionReleaseOnCancel: true,
+		LeaderElectionID:       "b1ba7785.wukong.com",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -102,7 +91,6 @@ func main() {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
-
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
