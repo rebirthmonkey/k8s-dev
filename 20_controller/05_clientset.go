@@ -12,7 +12,7 @@ import (
 func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	clientSet, err := kubernetes.NewForConfig(config)
@@ -26,6 +26,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Println(pod.Status)
+		fmt.Println("the test pod's status is:", pod.Status)
 	}
 }

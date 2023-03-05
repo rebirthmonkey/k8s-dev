@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
@@ -17,14 +18,15 @@ func main() {
 			Labels: map[string]string{"name": "foo"},
 		},
 	}
-	obj := runtime.Object(pod)
 
-	pod2, ok := obj.(*corev1.Pod)
+	podObj := runtime.Object(pod)
+
+	pod2, ok := podObj.(*corev1.Pod)
 	if !ok {
-		panic("unexpected")
+		fmt.Println("the conversion is unexpected")
 	}
 
 	if !reflect.DeepEqual(pod, pod2) {
-		panic("unexpected")
+		fmt.Println("the conversion is unexpected")
 	}
 }

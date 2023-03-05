@@ -14,7 +14,7 @@ import (
 func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
@@ -41,7 +41,7 @@ func main() {
 			fmt.Printf("Error getting podName %s in namespace %s: %v\n",
 				podName, namespace, statusError.ErrStatus.Message)
 		} else if err != nil {
-			println(err)
+			fmt.Println(err)
 		} else {
 			fmt.Printf("Found podName %s in namespace %s\n", podName, namespace)
 		}

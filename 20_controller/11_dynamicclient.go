@@ -15,7 +15,7 @@ import (
 func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	dynamicClient, err := dynamic.NewForConfig(config)

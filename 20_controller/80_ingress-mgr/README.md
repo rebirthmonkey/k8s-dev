@@ -1,12 +1,12 @@
-# App-Controller
+# Ingress Manager
 
 ## 简介
 
-本案例来源于[此代码](https://github.com/baidingtech/operator-lesson-demo.git)，它自定义实现一个简单的 controller，其作用是 watch 到有新的、带有特殊 annotation（ingress/http:true) 的 service 资源，一旦有新的资源被添加，则会自动添加对应的 ingress 资源。
+本案例来源于[此代码](https://github.com/baidingtech/operator-lesson-demo.git)，它自定义实现一个简单的 controller，其作用是 watch 到有新的、带有特殊 annotation（ingress/http:true）的 service 资源，一旦有新的资源被添加，则会自动添加对应的 ingress 资源。
 
 <img src="figures/image-20220912100551553.png" alt="image-20220912100551553" style="zoom:50%;" />
 
-Controller 监听 Service 资源
+Ingress Manager Controller 监听 Service 资源
 
 - 新增 Service：
   - 包含指定 annotation（ingress/http:true），创建 ingress 资源对象
@@ -29,7 +29,7 @@ Controller 监听 Service 资源
 
 - 启动 controller
 ```shell
-go run cmd/app-controller.go
+go run cmd/main.go
 ```
 
 - 验证 ingress 为空
@@ -65,7 +65,7 @@ kubectl get ingress # ingress自动删除
 
 - Docker 镜像 build
 ```shell
-docker build -t app-controller:1.0.1 .
+docker build -t ingress-mgr:1.0.1 .
 ```
 
 - 启动 ingress manager

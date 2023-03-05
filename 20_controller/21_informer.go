@@ -12,7 +12,7 @@ import (
 func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
@@ -21,10 +21,10 @@ func main() {
 	}
 
 	factory := informers.NewSharedInformerFactory(clientset, 0)
-	informer := factory.Core().V1().Pods().Informer()
+	podInformer := factory.Core().V1().Pods().Informer()
 
 	// add event handlers
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			fmt.Println("Add Event")
 		},
@@ -36,9 +36,9 @@ func main() {
 		},
 	})
 
-	// start informer
+	// start podInformer
 	stopCh := make(chan struct{})
-	factory.Start(stopCh)            // start informer
-	factory.WaitForCacheSync(stopCh) // 等待缓存与 APIServer 同步
+	factory.Start(stopCh)            // start podInformer
+	factory.WaitForCacheSync(stopCh) // 等待缓存与APIServer同步
 	<-stopCh                         // keep the loop
 }

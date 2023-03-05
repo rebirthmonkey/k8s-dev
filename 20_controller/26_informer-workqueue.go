@@ -13,7 +13,7 @@ import (
 func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
@@ -22,13 +22,12 @@ func main() {
 	}
 
 	factory := informers.NewSharedInformerFactory(clientset, 0)
-	informer := factory.Core().V1().Pods().Informer()
+	podInformer := factory.Core().V1().Pods().Informer()
 
-	// create workqueue
 	rateLimitingQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "controller")
 
 	// add event handler
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err != nil {
@@ -55,7 +54,7 @@ func main() {
 		},
 	})
 
-	// start informer
+	// start podInformer
 	stopCh := make(chan struct{})
 	factory.Start(stopCh)
 	factory.WaitForCacheSync(stopCh)

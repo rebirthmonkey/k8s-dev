@@ -1,4 +1,4 @@
-module github.com/rebirthmonkey/k8s-dev/20_client-go
+module github.com/rebirthmonkey/k8s-dev/20_controller/80_ingress-mgr
 
 go 1.18
 

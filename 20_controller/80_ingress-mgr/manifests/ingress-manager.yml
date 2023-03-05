@@ -19,7 +19,7 @@ spec:
     spec:
       serviceAccountName: ingress-manager-sa
       containers:
-      - image: ingress-manager:1.0.1
+      - image: ingress-mgr:1.0.1
         name: ingress-manager
         resources: {}
 status: {}

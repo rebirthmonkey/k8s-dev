@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"k8s.io/client-go/informers"
@@ -9,12 +8,10 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/rebirthmonkey/k8s-dev/app-controller/pkg/controller"
+	"github.com/rebirthmonkey/k8s-dev/20_controller/80_ingress-mgr/pkg/controller"
 )
 
 func main() {
-	fmt.Println("k8s app: starting!")
-
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	if err != nil {
 		inClusterConfig, err := rest.InClusterConfig()
@@ -34,11 +31,11 @@ func main() {
 	ingressInformer := factory.Networking().V1().Ingresses()
 
 	// create controller
-	serviceController := controller.NewController(clientSet, serviceInformer, ingressInformer)
+	ingressMgrController := controller.NewController(clientSet, serviceInformer, ingressInformer)
 
 	// start controller
 	stopCh := make(chan struct{})
 	factory.Start(stopCh)
 	factory.WaitForCacheSync(stopCh)
-	serviceController.Run(stopCh)
+	ingressMgrController.Run(stopCh)
 }

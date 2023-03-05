@@ -36,8 +36,8 @@ type controller struct {
 func NewController(clientSet kubernetes.Interface, serviceInformer coreInformer.ServiceInformer, ingressInformer networkingInformer.IngressInformer) controller {
 	c := controller{
 		clientSet:     clientSet,
-		ingressLister: ingressInformer.Lister(),
 		serviceLister: serviceInformer.Lister(),
+		ingressLister: ingressInformer.Lister(),
 		workQueue:     workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "ingressManager"),
 	}
 
@@ -67,8 +67,7 @@ func (c *controller) addService(obj interface{}) {
 }
 
 func (c *controller) updateService(oldObj interface{}, newObj interface{}) {
-	// 比较 annotation
-	if reflect.DeepEqual(oldObj, newObj) {
+	if reflect.DeepEqual(oldObj, newObj) { // 比较 annotation
 		return
 	}
 

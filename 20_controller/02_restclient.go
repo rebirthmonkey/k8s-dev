@@ -12,9 +12,9 @@ import (
 
 func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
-	//config, err := clientcmd.BuildConfigFromFlags("", "/tmp/cls-j7xitnn8-config")
+	//config, err := clientcmd.BuildConfigFromFlags("", "/tmp/cls-j7xitnn8-config")  // map to a k8s context file
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	config.APIPath = "/api"
@@ -27,6 +27,7 @@ func main() {
 	}
 
 	pod := corev1.Pod{}
+
 	err = restClient.Get().
 		Namespace("default").
 		Resource("pods").
@@ -36,6 +37,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Println(pod.Status)
+		fmt.Println("the test pod's status is:", pod.Status)
 	}
 }

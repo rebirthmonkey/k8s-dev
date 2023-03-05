@@ -1,10 +1,22 @@
-# Basics
+# 基本概念
 
 k8s 用于管理分布式、容器化应用，它提供了零停机时间部署、自动回滚、缩放和自愈等功能。k8s 提供了一个抽象层，使其可以在物理或 VM 环境中部署容器应用，提供以容器为中心的基础架构。其设计理念是为了支撑**横向扩展**，即调整应用的副本数以提高可用性。k8s的具体特点如下：
 
 - 环境无依赖：同一个应用支持公有云、私有云、混合云、多云部署。
 - 面向切片（Aspect-oriented）：通过插件化使所用功能都以插件部署形式动态加载，尤其针对业务复杂度较高的应用。
 - 声明式：平台自身通过自动化方式达到预期状态。
+
+原生 k8s 应用指通过 kube-apiserver 进行交互，可直接查询、更新资源的状态的应用。这类应用强依赖 k8s，并在一定程度上可以直接调用 k8s 的 API 及相关资源。
+
+<img src="figures/image-20220725092124197.png" alt="image-20220725092124197" style="zoom: 67%;" />
+
+## k8s扩展模式
+
+扩展 K8s 的方式可以分为以下几类：
+
+- 二进制插件：一段可执行的二进制程序，主要由 kubelet、kubectl 使用，例如 Flex 卷插件、网络插件。
+- Webhook模式：另一种扩展模式是 K8s 作为客户端来访问外部服务。这种模式叫 Webhook 模式，被访问的外部服务叫做 Webhook Backend。
+- Controller 控制器模式：还有一种扩展模式叫做控制器模式，控制器负责执行例行性任务来保证集群尽可能接近其期望状态，确保当前 status 与期望的 spec 保持一致。典型情况下控制器读取`.spec`字段，运行一些逻辑，然后修改`.status`字段。K8s 自身提供了大量的控制器，并由控制器管理器统一管理。It’s a controller’s job to ensure that, for any given object, the actualstate of the world matches the desired state in the object.  Each controller focuses on one  root Kind, but may interact with other Kinds. We call this process reconciling.
 
 ## 架构
 
@@ -17,7 +29,7 @@ k8s 遵从 C/S 架构，集群分为 master 和 node 2 部分，master 作为控
 Master 可以多节点实现高可用，默认情况下 1 个节点也能完成所有工作。它首先负责管理所有 node ，负责调度 pod 在哪些节点上运行，并且负责控制集群运行过程中的所有状态。所有控制命令都由 master 接收并处理，其核心组件包括：
 
 - etcd：保存了整个集群的状态。
-- [kube-apiserver](kube-apiserver/README.md)：集群的 REST 接口，是集群控制的入口。提供了资源操作的唯一入口，并提供认证、授权、访问控制、API 注册和发现等机制。kube-apiserver 负责将 k8s 的 GVR “资源组/资源版本/资源”以 REST 的形式对外暴露并提供服务。k8s 集群中的所有组件都通过 kube-apiserver 操作资源对象。kube-apiserver 也是集群中唯一与etcd 集群交互的核心组件，k8s 将所有数据存储至 etcd 集群中前缀为 /registry 的目录下。
+- [kube-apiserver](kube-apiserver/README.md)：提供 REST API 对 k8s 资源对象进行操作，它是集群的 REST 接口，是集群控制的入口。提供了资源操作的唯一入口，并提供认证、授权、访问控制、API 注册和发现等机制。kube-apiserver 负责将 k8s 的 GVR “资源组/资源版本/资源”以 REST 的形式对外暴露并提供服务，k8s 集群中的所有组件都通过 kube-apiserver 操作资源对象。kube-apiserver 也是集群中唯一与etcd 集群交互的核心组件，k8s 将所有数据存储至 etcd 集群中前缀为 /registry 的目录下。
 - [kube-controller-manager](kube-controller-mgr/README.md)：集群所有资源对象的自动化控制中心，负责维护集群的状态，比如故障检测、自动扩展、滚动更新等。kube-controller-manager 的目的是确保 k8s 的实际状态收敛到所需状态，它会及时发现并执行自动化修复流程，确保集群始终处于预期的工作状态。kube-controller-manager 提供了一些默认的 controller，每个 controller 通过 kube-apiserver 的接口实时监控整个集群的每个资源对象的状态。当发生各种故障而导致集群状态发生变化时，会尝试将系统状态恢复到期望状态。
 - [kube-scheduler](kube-scheduler/README.md)：集群 pod 资源对象的调度服务，负责资源的调度，按照预定的调度策略将 pod 调度到相应的机器上。kube-scheduler 负责在 k8s 集群中为一个 pod 资源对象找到合适的节点并在该节点上运行，kube-scheduler 每次只调度一个 pod。
 
@@ -29,7 +41,7 @@ Node 是 k8s 集群的工作节点，负责管理本 node 上的所有容器，�
 - Container runtime：它接收 kubelet 的指令，负责镜像管理以及 pod 和容器的真正运行（CRI），默认的容器运行时为 Docker。
 - [kube-proxy](kube-proxy/README.md)：负责 k8s 中服务的通讯及负载均衡，如为 Service 提供 cluster 内部的服务发现和负载均衡。kube-proxy 作为 node 上的网络代理，它监控 kube-apiserver 的服务和端点资源变化，通过 iptables/IPVS 等配置负载均衡，为一组 pod 提供统一的流量转发和负载均衡功能。kube-proxy 对某个 IP:Port 的请求，负责将其转发给专用网络上的相应服务。
 
-### Add-ons组件
+### Add-ons
 
 除了核心组件，还有一些推荐的 Add-ons：
 
@@ -45,11 +57,11 @@ Node 是 k8s 集群的工作节点，负责管理本 node 上的所有容器，�
 ### 客户端
 
 - kubectl：kubectl 是 k8s 的 CLI，用户可以通过 kubectl 以命令交互的方式对 kube-apiserver 进行操作，通讯协议使用 HTTP/JSON。kubectl 发送相应的 HTTP 请求，请求由 kube-apiserver 接收、处理并将结果反馈给 kubectl，kubectl 接收到相应并展示结果。
-- [client-go](../20_client-go/README.md)：client-go 是从 k8s 的代码中独立抽离出来的包，并作为官方提供的 Go 的 SDK 发挥作用。在大部分基于 k8s 做二次开发的程序中，建议通过 client-go 来实现与 kube-apiserver 的交互过程。因为 client-go 在 k8s 系统上做了大量优化，k8s 的核心组件（如 kube-scheduler、kube-controller-manager 等）都通过 client-go 与 kube-apiserver 进行交互。
+- [client-go](../20_controller/README.md)：client-go 是从 k8s 的代码中独立抽离出来的包，并作为官方提供的 Go 的 SDK 发挥作用。在大部分基于 k8s 做二次开发的程序中，建议通过 client-go 来实现与 kube-apiserver 的交互过程。因为 client-go 在 k8s 系统上做了大量优化，k8s 的核心组件（如 kube-scheduler、kube-controller-manager 等）都通过 client-go 与 kube-apiserver 进行交互。
 
 ## Schema
 
-k8s 所管理的 API 资源支持多个 group，每个 group 支持多个 version，每个 version 又支持多种资源。我们常提到的 schema 指 GVR、GV、GR、GVK、GK 等。
+k8s 所管理的 API 资源支持多个 group，每个 group 支持多个 version，每个 version 又支持多种资源。我们常提到的 schema 指 GVR、GV、GR、GVK、GK 等，它定于在 apimachinery 中。
 
 ### GVR
 
@@ -64,7 +76,7 @@ group 的主要功能包括：
 - 将资源划分 group 后，允许以 group 为单元进行启用/禁用。
 - 每个 group 有自己的 version，方便以 group 为单元进行迭代升级。
 
-其数据结构：
+数据结构：
 
 - Name：group 的名字。
 - Versions：group 下所支持的版本。
@@ -78,6 +90,12 @@ group 的主要功能包括：
 
 - Versions：所支持的所有版本。
 
+具体类型：
+
+- alpha 级：随时会被舍弃，如 v1alpha1
+- beta 级：后续可能会有不兼容变化，如 v1beta1
+- stable 级：如 v1
+
 #### Resource
 
 API resource（REST）是 k8s 对外的核心概念，k8s 整个体系都是围绕着 resource 构建的。k8s 的本质就是对这些 REST resource 的控制，包括注册、管理、调度并维护资源的状态。目前 k8s 支持 8 种对 resource 的操作，分别是 create、delete、delectcollection、get、list、patch、update、watch。
@@ -90,11 +108,7 @@ Resource 被实例化后会表现为一个 resource object 资源对象。
 
 ### GVK
 
-#### Kind
-
 k8s 的 group、version、resource 都是对外展示的 API 资源，而 kind 是 k8s 内部的资源表示形式，用于描述外部 API resource 对应的 k8s 内部资源形式，后续代码层面的 Go Type 都是基于某种 kind 来实现的。根据 kind 的不同，resource 中具体字段也会有所不同，不过他们都用基本相同的结构。不同的 kind 被映射到不同的 group 中，并有着不同的 version。
-
-#### GVK
 
 由于不同版本的 kind 的结构体存在差异，如果只用 kind 则无法获取具体版本的结构体。因此需要 GVK 这 3 个信息才能准确确定一个 kind，并且通过后续介绍的 scheme 获取 GVK 对应的 Go 结构体。但同一个 kind 结构体可以对应多个不同的 GVK。
 
@@ -102,19 +116,13 @@ k8s 的 group、version、resource 都是对外展示的 API 资源，而 kind �
 
 kind 是对应了 k8s 内部使用，可以认为是用于 k8s 内部操作的资源。而 resource 是从外部来看的 k8s 的 API REST 资源。具体而言，resource 都会对应一个 HTTP Path，而 kind 是通过这个 HTTP Path 返回的对象的类型，用于 k8s 内部操作或 Etcd 存储。
 
-#### RESTMapper
-
-GVK 与 GVR 之间的映射关系被称为 RESTMapper，用于请求一个 GVK 所对应的 GVR。
-
-<img src="figures/image-20220725092000368.png" alt="image-20220725092000368" style="zoom:50%;" />
-
 ### Type
 
-Type 是代码层面 Go 内部的 struct 结构体，在编码过程中，k8s 的资源都是以 Go 的 Type struct 的形式存储的。
+Type 是代码层面 Go 内部的 struct 结构体，在编码过程中，k8s 的资源都是以 Go 的 Type struct 的形式存储的。资源定义通常放在 pkg/apis/group/version 中一个名为 xxx_types.go 的文件中，具体内容如下：
 
-#### xxx_types.go
+#### Object
 
-资源定义通常放在 pkg/apis/group/version 中一个名为 types.go 的文件中，具体内容如下：
+schema=metadata+Spec+Status，如 Pod、Endpoint 等。
 
 - TypeMeta：
   - apiVersion：
@@ -134,20 +142,17 @@ Type 是代码层面 Go 内部的 struct 结构体，在编码过程中，k8s �
 - Spec：用户期望的状态
 - Status：当前的状态
 
-#### scheme
+// +kubebuilder:object:root：tells the object generator that this type representsa Kind. Then, the object generator generates an implementation of the[runtime.Object](https://pkg.go.dev/k8s.io/apimachinery/pkg/runtime?tab=doc#Object) interface.
 
-scheme 用于实现 GVK 与 Go Type 结构体之间的映射。
+#### ListObject
 
-k8s 有众多的资源类型，这些资源类型需要统一的注册、存储、查询和管理。scheme 是 k8s 中的注册表，目前 k8s 中的所有资源类型（GVK）都需要注册到 scheme 中，用于建立 **Go Type 结构体与 GVK 间的映射关系**。目前 k8s scheme 支持 UnversionedType 和 KnownType（也被直接称为 Type） 两种 kind 的注册。
+如 PodList、NodeList
 
-scheme 资源注册表的数据结构主要由 4 个 map 组成：
-
-- gvkToType：
-- typeToGVK：
-- unversionedTypes：
-- unversionedKinds：
-
-在注册资源类型时，会根据 Type 的类型同时添加到这 4 个 map 中。
+- TypeMeta：
+  - apiVersion
+  - kind
+- ListMeta：List的通用属性
+- Items：资源列表
 
 #### 版本转换
 
@@ -187,11 +192,57 @@ external 和 internal version 的相互转换的函数需要事先初始化到 s
   - 手动编写：`pkg/apis/group-name/version/defaults.go`
 - 注册 scheme：`pkg/apis/group-name/install/install.go`
 
+### 类型转换
+
+![image-20230304153815952](figures/image-20230304153815952.png)
+
+#### RESTMapper
+
+GVK 与 GVR 之间的映射关系被称为 RESTMapper，用于请求一个 GVK 所对应的 GVR。
+
+#### Scheme（注册表）
+
+k8s 有众多的资源类型，这些资源类型需要统一的注册、存储、查询和管理。scheme 是 k8s 中的注册表，目前 k8s 中的所有 GVK-GoType 都需要注册到 scheme 中，用于建立 **Go Type 结构体与 GVK 间的映射关系**。目前 k8s scheme 支持 UnversionedType 和 KnownType（也被直接称为 Type） 两种 kind 的注册。
+
+scheme 资源注册表的数据结构主要由 4 个 map 组成：
+
+- gvkToType：
+- typeToGVK：
+- unversionedTypes：
+- unversionedKinds：
+
+在注册资源类型时，会根据 Type 的类型同时添加到这 4 个 map 中。
+
+具体操作为：
+
+```go
+scheme.AddKnownTypes(schema.GroupVersionKind{"","v1","Pod"},&Pod{})
+```
+
 ## 代码
 
-### Layout
+### apimachinery
 
+`k8s.io/apimachinery` 用于存放 k8s 服务端和客户端公用的库，包含了用于实现类似 k8s API 的通用代码，它并不仅限于容器管理，还可以用于任何业务领域的 API 接口开发。它包含了：
 
+- ObjectMeta、TypeMeta、GetOptions、ListOptions 等
+- Scheme
+- RESTMapper
+- 编码解码
+- 版本转换
+
+#### runtime.Object
+
+runtime.Object 是 k8s 的通用资源类型，k8s 上的所有 resource object 实际上都是 Go 的一个 struct，它们都实现 runtime.Object 接口。runtime.Object 被设计为 Interface，作为 resource object 通用部分，该 interface 具体包含 2 个方法：
+
+- GetObjectKind()：返回 GVK
+- DeepCopyObject()：将数据结构克隆一份
+
+#### interface.go
+
+Serializer 包含序列化和反序列化操作。序列化将数据结构转换为字符串，而反序列化将字符串转换为数据结构，这样可以轻松地维护并存储、传输数据结构。Codec 包含编码器和解码器，它比 serializer 更为通用，指将一种数据结构转换为特定的格式的过程。所以，可以将 serializer 理解为一种特殊的 codec。
+
+k8s 的 codec 包含 3 种 serializer：jsonSerializer、yamlSerializer、protobufSerializer。
 
 ### Option&Config
 
@@ -230,7 +281,7 @@ external 和 internal version 的相互转换的函数需要事先初始化到 s
 
 <img src="figures/image-20220804190826143.png" alt="image-20220804190826143" style="zoom:50%;" />
 
-#### kube-apiserver 示例
+#### kube-apiserver示例
 
 <img src="figures/image-20220804190837112.png" alt="image-20220804190837112" style="zoom:50%;" />
 
@@ -251,29 +302,6 @@ make all
 #### Bazel环境构建
 
 
-
-### apimachinery
-
-`k8s.io/apimachinery` 用于存放 k8s 服务端和客户端公用的库，包含了用于实现类似 k8s API 的通用代码，它并不仅限于容器管理，还可以用于任何业务领域的 API 接口开发。它包含了：
-
-- ObjectMeta、TypeMeta、GetOptions、ListOptions 等
-- Scheme
-- RESTMapper
-- 编码解码
-- 版本转换
-
-#### runtime.Object
-
-runtime.Object 是 k8s 的通用资源类型，k8s 上的所有 resource object 实际上都是 Go 的一个 struct，它们都实现 runtime.Object 接口。runtime.Object 被设计为 Interface，作为 resource object 通用部分，该 interface 具体包含 2 个方法：
-
-- GetObjectKind()：返回 GVK
-- DeepCopyObject()：将数据结构克隆一份
-
-#### interface.go
-
-Serializer 包含序列化和反序列化操作。序列化将数据结构转换为字符串，而反序列化将字符串转换为数据结构，这样可以轻松地维护并存储、传输数据结构。Codec 包含编码器和解码器，它比 serializer 更为通用，指将一种数据结构转换为特定的格式的过程。所以，可以将 serializer 理解为一种特殊的 codec。
-
-k8s 的 codec 包含 3 种 serializer：jsonSerializer、yamlSerializer、protobufSerializer。
 
 ## Lab
 
