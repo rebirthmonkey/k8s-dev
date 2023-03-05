@@ -1,5 +1,5 @@
 # Sample Controller/App
-基于 k8s 社区的例子 [sample controller](https://github.com/kubernetes/sample-controller) 改造而成的 app。
+基于 k8s 社区的例子 [sample controller](https://github.com/kubernetes/sample-controller) 改造而成的 app，其原理是当创建一个 app 资源时，对应的创建 deployment、service 和 ingress 资源。
 
 ## Lab
 
@@ -54,14 +54,14 @@ spec:
 - 启动程序
 
 ```shell
-go run ./cmd/app-controller.go --kubeconfig=$HOME/.kube/config 
+go run ./cmd/app.go --kubeconfig=$HOME/.kube/config 
 ```
 
 - 在 k8s 中生成 CRD 及 CR 资源
 
 ```shell
-kubectl apply -f app.wukong.com_apps.yaml
-kubectl apply -f example.apps.yaml 
+kubectl apply -f ./manifests/app.wukong.com_apps.yaml
+kubectl apply -f ./manifests/example.apps.yaml 
 ```
 
 ### 标准代码
