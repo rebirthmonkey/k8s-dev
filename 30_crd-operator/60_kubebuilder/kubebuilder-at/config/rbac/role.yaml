@@ -6,7 +6,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - cnat.wukong.com
+  - at.wukong.com
   resources:
   - ats
   verbs:
@@ -18,13 +18,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - cnat.wukong.com
+  - at.wukong.com
   resources:
   - ats/finalizers
   verbs:
   - update
 - apiGroups:
-  - cnat.wukong.com
+  - at.wukong.com
   resources:
   - ats/status
   verbs:
