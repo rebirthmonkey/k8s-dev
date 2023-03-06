@@ -50,7 +50,7 @@ type AppReconciler struct {
 func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	fmt.Println("XXXXXXXX app changed", "ns", req.Namespace)
+	fmt.Println("kubebuilder-demo controller changed namespace ", req.Namespace)
 
 	return ctrl.Result{}, nil
 }

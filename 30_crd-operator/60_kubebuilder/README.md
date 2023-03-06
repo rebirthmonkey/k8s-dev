@@ -10,13 +10,18 @@ controller-runtime 库包含若干 Go 库，用于快速构建（controller-mana
 
 ### Manager
 
-controller-runtime 由 Manager（等价于 k8s 的 controller-manager）串联起来，用于启动（Manager.Start） controller，并且管理被多个 controller 依赖的组件（其中 Client 与 Cache 共同又被称作 Cluster）：
+controller-runtime 由 Manager 封装起来（等价于 k8s 的 controller-manager），用于启动 controller（Manager.Start） ，并且管理被多个 controller 依赖的组件（其中 Scheme、Client 与 Cache 共同又被称作 Cluster）：
 
-- Cluster：
-  - Cache：Cache 实际是 Controller 中 Informer 的包装，为读客户端提供本地缓存，支持监听更新缓存的事件。如 DelegatingClient 从 Cache 中读取（Get/List），而写入请求（Create/Update/Delete）则直接发送给 kube-apiserver，随着缓存的更新，读操作会达成最终一致。使用 Cache 可以大大减轻 kube-apiserver 的压力。
-  - Client：Client 是对 Controller 中 client 的封装，用于实现针对 kube-apiserver 的 CRUD 操作，读写客户端通常是分离（split）的。manager.Manager 会创建 client.Client。
-
+- Cache：Cache 实际是 Controller 中 Informer 的包装，为读客户端提供本地缓存，支持监听更新缓存的事件。如 DelegatingClient 从 Cache 中读取（Get/List），而写入请求（Create/Update/Delete）则直接发送给 kube-apiserver，随着缓存的更新，读操作会达成最终一致。使用 Cache 可以大大减轻 kube-apiserver 的压力。
+  
+- Client：Client 是对 Controller 中 client 的封装，用于实现针对 kube-apiserver 的 CRUD 操作，读写客户端通常是分离（split）的。manager.Manager 会创建 client.Client。
+  
 - Scheme：k8s GVK 的注册表。
+
+- Controller：
+  - Predicate：指明哪些 Event 会触发 Reconciler。
+  - Reconciler：Controller 真正的业务逻辑代码。
+
 
 <img src="figures/image-20220608172034690.png" alt="image-20220608172034690" style="zoom:50%;" />
 
@@ -31,7 +36,7 @@ controller-runtime 由 Manager（等价于 k8s 的 controller-manager）串联�
 
 ### Controller
 
-Controller 会监控多种类型的 API resource（如 Pod + ReplicaSet + Deployment），但是 Controller 的 Reconciler 一般仅仅处理单一类型的对象。controller 从 Manager 得到各种共享对象，它自己创建一个工作队列，并从工作队列中获取 event，转给 Reconciler。
+Controller 会监控多种类型的 API resource（如 Pod + ReplicaSet + Deployment），但是 Controller 的 Reconciler 一般仅仅处理单一类型的对象。controller 从 Manager 得到各种共享对象，它自己创建一个工作队列，并从工作队列中获取 Event，转给 Reconciler。
 
 当 A 类型的对象发生变化后，如果 B 类型的对象必须更新以响应，可以使用 EnqueueRequestFromMapFunc 来将一种类型的事件映射为另一种类型。如 Deployment 的 Controller 可以使用 EnqueueRequestForObject、EnqueueRequestForOwner 实现：
 
@@ -44,7 +49,7 @@ reconcile.Request 入队时会自动去重，也就是说一个 ReplicaSet 创�
 
 #### Predicate
 
-指明哪些 event 会触发 Reconciler。
+指明哪些 Event 会触发 Reconciler。
 
 #### Reconciler
 
@@ -53,29 +58,31 @@ Reconciler 是 Controller 的核心逻辑所在，它负责调和使 status 逼�
 - Concurrence：具体启多少个 Reconciler，每个 Reconciler 每次只能处理一个 event。
 - OwnerReference：用于从子对象（如 Pod）触发父对象的调和（如 ReplicaSet）操作。
 
-##### SetupWithManager()
+##### 定义SetupWithManager()
 
-SetupWithManager(mgr ctrl.Manager) 方法将本 controller 注册给 Manager：
+在 controller.go 文件中定义 SetupWithManager(mgr ctrl.Manager) 方法将本 controller 注册给 Manager：
 
 ```go
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
-// 创建一个被mgr管理的控制器，指定控制器喧嚣
-  return ctrl.NewControllerManagedBy(mgr).WithOptions(controller.Options{
-    MaxConcurrentReconciles: r.Concurrence,
-  }).For(&tcmv1.MoveToVpc{}).Complete(r)
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&ingressv1.App{}).
+		Complete(r)
 }
 ```
 
 - NewControllerManagedBy()：基于现有的 Manager 创建一个空壳的 Controller。
 - WithOptions()：
-- For()：指明本 controller 操作哪种 Go Type struct。
-- Complete()：为空壳 Controller 添加 Reconciler。
-- WithEventFilter()：在进入 controller 之前就过滤掉不符合条件（如已经标记为删除）的 event 资源，则需要修改 SetupWithManager() 方法，增加 WithEventFilter 调用：
+- For()：指明本 controller 操作哪类 Go Type struct。
+- Complete()：为空壳 Controller 绑定 Reconciler。
+- WithEventFilter()：在进入 controller 之前就过滤掉不符合条件（如已经标记为删除）的 Event 资源，则需要修改 SetupWithManager() 方法，增加 WithEventFilter 调用：
 
 ```go
 func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
-  return ctrl.NewControllerManagedBy(mgr).WithOptions(controller.Options{
-MaxConcurrentReconciles: r.Concurrence,}).For(&tcmv1.MoveToVpc{}).WithEventFilter(predicate.Funcs{
+  return ctrl.NewControllerManagedBy(mgr).
+    WithOptions(controller.Options{
+MaxConcurrentReconciles: r.Concurrence,}).
+    For(&ingressv1.App{}).
+    WithEventFilter(predicate.Funcs{
   // 分别对资源增加、删除、更新事件进行过滤
   CreateFunc: func(event event.CreateEvent) bool {
     return r.predicate(event.Object)
@@ -86,24 +93,23 @@ MaxConcurrentReconciles: r.Concurrence,}).For(&tcmv1.MoveToVpc{}).WithEventFilte
   UpdateFunc: func(event event.UpdateEvent) bool {
     return r.predicate(event.ObjectNew)
   },
-  }).Complete(r)
+  }).
+    Complete(r)
 }
 ```
 
-##### 注册 Controller/Reconciler
+##### 注册Controller/Reconciler
 
-在 `cmd/manager/main.go` 中实例化 controller，并调用 SetupWithManager() 注册到 controller-manager 中：
+在 `main.go` 中实例化 Controller/Reconciler，并调用 SetupWithManager() 注册到 Manager 中：
 
 ```go
-    if err = movetovpc.NewMoveToVpcReconciler(
-        movetovpc.Config{
-            Client:      mgr.GetClient(),
-            Concurrence: concurrence,
-        },
-    ).SetupWithManager(mgr); err != nil {
-        setupLog.Error(err, "unable to create controller", "controller", "MoveToVpc")
-        os.Exit(1)
-    }
+	if err = (&controllers.Reconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "App")
+		os.Exit(1)
+	}
 ```
 
 ### Webhook
@@ -112,7 +118,7 @@ MaxConcurrentReconciles: r.Concurrence,}).For(&tcmv1.MoveToVpc{}).WithEventFilte
 
 ### SchemeBuilder注册机制
 
-SchemeBuilder 设计模式用于不同模块在初始化时将自身信息注册到 scheme 注册表中去。其原理是构建一个回调函数列表，并在某一时刻统一执行。它先通过 Register() 注册一堆用于将 GV-Type 添加到 scheme 中的回调函数，然后通过 AddToManager() 执行所有回调函数实现真正的 scheme 的注册。
+SchemeBuilder 设计模式用于不同模块在初始化时将自身信息注册到 scheme 注册表中去。其原理是构建一个回调函数列表，并在某一时刻统一执行。它先通过 Register() 注册一堆用于将 GV-Type 添加到 scheme 中的回调函数，然后通过 AddToManager() 执行所有回调函数实现真正的 scheme 注册。
 
 #### 数据结构
 
@@ -120,13 +126,13 @@ scheme 包含一组 Builder（每个 Builder 对应一个 GV），每个 Builder
 
 #### 流程
 
-- 创建 Builder：为某个 GroupVersion 创建一个 Builder，一般在 `groupversion_info.go` 文件中。
+- 创建 Builder（回调函数列表）：在 `groupversion_info.go` 文件中为某个 GroupVersion 创建一个 Builder。
 
 ```go
 SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 ```
 
-- 将 Type 注册到对应 GV 的 Builder 中（SchemeBuilder.Register()）：可以注册若干回调函数到 Builder 中，这些回调函数接受 scheme 作为参数，并且为其添加 Type（Go struct）。这部分逻辑往往在 xxx_type.go 文件的 init() 函数中。
+- 将回调函数添加到 Builder 中：在 xxx_type.go 文件的 init() 函数中，通过 SchemeBuilder.Register() 函数，将对应的 Type（Go struct）注册到对应 GV 的 Builder 列表中。
 
 ```go
 func init() {
@@ -134,7 +140,7 @@ func init() {
 }
 ```
 
-- 执行 Builder 内所有注册的 Callback 函数（AddToManager()）：所有注册的回调函数要延迟到 AddToManager() 的那一刻才真正执行。
+- 执行 Builder 内所有注册的回调函数：在 main.go 文件的 init() 函数中，所有注册的回调函数要延迟到 AddToScheme() 的那一刻才真正执行、GVK 被添加到 Scheme 中。
 
 ## Layout
 
@@ -161,6 +167,10 @@ api
 │   └── zz_generated.openapi.go
 └── zz_generated.deepcopy.go
 ```
+
+#### xxx_types.go
+
+
 
 #### doc.go
 
@@ -264,19 +274,21 @@ func Resource(resource string) schema.GroupResource {
 
 以 xxx API resource 为例。
 
-### scheme注册
+### 定义GV
 
-#### GVK
+在 api/v1/groupversion_info.go 文件中添加 group 和 version
 
-##### 定义Group/Version
+### 创建GV对应的Builder
 
-添加 group 和 version
+需要在 api/v1/groupversion_info.go 中创建该 GV 的 Builder。
 
-#### Type
+```go
+SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
+```
 
-##### 定义Type
+### 定义Type
 
-在 group/version/xxx_types.go 文件中建立、更新 type struct。通常至少需要定义 Xxx（资源名的驼峰式大小写）、XxxcList（表示资源的列表）两个结构，Xxx 结构至少包含 Spec、Status 两个额外字段，对应结构 XxxSpec、XxxStatus，分别代表规格（输入参数）和状态（当前状态）。此外，相关结构上必须提供必要的 kubebuilder 注解、所有字段都应该提供 JSON tag（驼峰式大小写）：
+在 api/v1/xxx_types.go 文件中建立、更新 type struct。通常至少需要定义 Xxx（资源名的驼峰式大小写）、XxxcList（表示资源的列表）两个结构，Xxx 结构至少包含 Spec、Status 两个额外字段，对应结构 XxxSpec、XxxStatus，分别代表规格（输入参数）和状态（当前状态）。此外，相关结构上必须提供必要的 kubebuilder 注解、所有字段都应该提供 JSON tag（驼峰式大小写）：
 
 ```go
 //+kubebuilder:object:root=true
@@ -300,7 +312,7 @@ type XxxList struct {
 }
 ```
 
-##### 自动生成deepcopy
+### 生成deepcopy
 
 添加完新资源后需要执行下面的命令，重新生成 zz_generated.deepcopy.go 文件，该文件包含了一系列和深拷贝有关的代码：
 
@@ -310,19 +322,7 @@ make generate
 
 注意，每当修改资源的任何字段，该命令都需要再次执行。makefile 已经正确处理好依赖，所有依赖 generate 的目标都会自动调用它。
 
-#### scheme
-
-scheme 是 Type-GVK 注册表。
-
-##### 创建Builder
-
-需要在 api/v1/groupversion_info.go 中创建该 GV 的 Builder。
-
-```go
-SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
-```
-
-##### Register注册
+### 添加GVK-Type到Builder
 
 需要在 api/v1/xxx_types.go 文件的 init() 方法中，将定义的资源、资源列表注册到 Scheme 中的 GV 中（每个 SchemeBuilder 对应一个 GV）：
 
@@ -332,15 +332,15 @@ func init() {
 }
 ```
 
-##### AddToScheme添加
+### 注册GVK-Type到Scheme
 
-同时，在 main() 中真正执行 `AddToScheme()` 将 Xxx Type 添加到 scheme 中。
+在 main.go 的 init() 中执行 `AddToScheme()`，真正将 Xxx Type 添加到 scheme 中。
 
 ```go
 utilruntime.Must(xxxv1.AddToScheme(scheme))
 ```
 
-##### 注册__internal
+#### 注册__internal
 
 如需要 internal 版本，修改 apis/v1/groupversion_info.go，将资源注册到 __internal 版本：
 
@@ -351,17 +351,29 @@ SchemeBuilderInternal = runtime.NewSchemeBuilder(func(s *runtime.Scheme) error {
 })
 ```
 
-### Manager组装
+### 定义Reconciler
 
 kubebuilder 封装了 controller-runtime，在主文件中主要初始了`manager`，以及填充的`Reconciler`与`Webhook`，最后启动`manager`。
 
-#### 定义Reconciler
-
-创建 Reconciler struct，位于 controllers/xxx_controller.go 文件中。并且给 Reconciler 添加 Reconcile() 方法，并在其中写入核心业务逻辑，然后可以运行 operator `make run`。
+在 controllers/xxx_controller.go 文件中，创建 Reconciler struct。并给 Reconciler 添加 Reconcile() 方法，并在其中写入核心业务逻辑。
 
 Reconcile() 的触发是通过 Cache 中的 Informer 获取到资源的变更事件，然后再通过生产者消费者的模式触发自己填充的 Reconcile() 方法的。
 
-#### 创建Manager
+### 创建Reconciler
+
+创建一个 Xxx API resource 对应的 Controller，其中：
+
+- Scheme：为整个 Manager 统一的 Scheme
+- Client：为整个 Manager 共享的 client
+
+```go
+if err = (&controllers.XxxReconciler{
+   Client: mgr.GetClient(),
+   Scheme: mgr.GetScheme(),
+})
+```
+
+### 创建Manager
 
 在`NewManager()`中主要初始化了各种配置：
 
@@ -372,21 +384,7 @@ Reconcile() 的触发是通过 Cache 中的 Informer 获取到资源的变更事
 - LeaderElection：ture、false
 - LeaderElectionID：
 
-#### 创建Reconciler
-
-创建一个 Xxx API resource 对应的 Controller，其中：
-
-- Scheme：为整个 Manager 统一的 Scheme
-- client：为整个 Manager 共享的 client
-
-```go
-if err = (&controllers.XxxReconciler{
-   Client: mgr.GetClient(),
-   Scheme: mgr.GetScheme(),
-})
-```
-
-#### 添加Reconciler到Manager
+### 添加Reconciler到Manager
 
 SetupWithManager() 把创建的 Controller 添加到 Manager 中
 
@@ -409,7 +407,7 @@ ctrl.NewControllerManagedBy(mgr).
 		Complete(r)
 ```
 
-#### 启动Manager
+### 启动Manager
 
 ```go
 err := mgr.Start(ctrl.SetupSignalHandler())
@@ -425,7 +423,13 @@ err := mgr.Start(ctrl.SetupSignalHandler())
     - c.processNextWorkItem(ctx) --> processNextWorkItem() --> reconcileHandler() --> Do.Reconcile(ctx, req)
 - startLeaderElection()：启动选主服务
 
-### CR
+### 创建CRD YAML
+
+```shell
+make manifests
+```
+
+### 创建CR YAML
 
 需要根据 CRD 建立自己的 CR yaml 文件。
 

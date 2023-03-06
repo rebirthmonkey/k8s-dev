@@ -66,7 +66,7 @@ spec:
 
 ### CR
 
-一旦 CRD 创建成功，就可以创建对应类型的 CR（Custom Resource）了。自定义资源可以包含任意的自定义字段，例如：
+CR 可以用作系统内部使用的对象，仅仅进行声明式定义，而不关联 controller，用于保持少量配置信息。一旦 CRD 创建成功，就可以创建对应类型的 CR（Custom Resource）了。自定义资源可以包含任意的自定义字段，例如：
 
 ```yaml
 apiVersion: "k8s.wukong.com/v1"
@@ -76,9 +76,9 @@ metadata:
   # 删除前钩子
   finalizers:
   # 下面的形式非法
-  - finalizer.k8s.gmem.cc
+  - finalizer.k8s.wukong.com
   # 必须这样
-  - finalizer.k8s.gmem.cc/xxx
+  - finalizer.k8s.wukong.com/xxx
 spec:
   cronSpec: "* * * * */5"
   image: crontab:1.0.0
@@ -115,19 +115,6 @@ kubectl scale --replicas=3 atxxx -v=7
 
 Operator 是一种 K8s 的扩展形式，利用 CR 来管理应用和组件，允许用户以 K8s 的声明式 API 风格来管理应用及服务，支持 kubectl 命令行。同时 Operator 开发者可以像使用原生 API 进行应用管理一样，通过声明式的方式定义一组业务应用的期望终态，并且根据业务应用的自身特点进行相应控制器逻辑编写，以此完成对应用运行时刻生命周期的管理并持续维护与期望终态的一致性。这样的设计范式使得应用部署者只需要专注于配置自身应用的期望状态，而无需再投入大量的精力在手工部署或是业务在运行时刻的繁琐运维操作中。
 
-在 K8s 的实现思想中，会使用 Controller 模式对 Etcd 里的 API 资源对象变化保持不断的监听（Watch），并在 Controller 中对指定事件进行响应处理，针对不同的 API 资源可以在对应的控制器中添加相应的业务逻辑，通过这种方式完成应用编排中各阶段的事件处理。而 Operator 正是基于 controller 模式，允许应用开发者通过扩展 k8s API 资源的方式，将复杂的分布式应用集群抽象为一个自定义的 API 资源，通过对自定义 API 资源的请求可以实现基本的运维操作，而在 Operator 中开发者可以专注实现应用在运行时管理中遇到的相关复杂逻辑。Operator 定义了一组在 k8s 集群中打包和部署复杂业务应用的方法，Operator 主要是为解决特定应用或服务关于如何部署、运行及出现问题时如何处理提供的一种特定的自定义方式。比如：
-
-- 按需部署应用服务（总不能用一大堆 configmap 来管理吧）
-- 实现应用状态的备份和还原，完成版本升级
-- 为分布式应用进行 master 选举，例如 etcd
-
-Operator 首先是一个 controller，通过扩展 k8s API 来创建、配置和管理一个复杂、有状态的应用。它一般基于 k8s 的资源和 controller 相关概念开发，但还包含了很多业务领域或应用相关的逻辑，实现了一些自动化操作代替用户的手工操作。这些自动化运维操作往往是一些最佳实践，例如动态扩容等。Operator 定义了一组在 k8s 集群中打包和部署复杂业务应用的方法，它可以方便地在不同集群中部署并在不同的客户间传播共享。同时 Operator 还提供了一套应用在运行时的监控管理方法，领域专家通过将业务关联的运维逻辑写入到 operator  自身控制器中，而一个运行中的 Operator 就像一个 7*24 不间断工作的优秀运维团队，可以时刻监控应用自身状态和该应用在 k8s 集群中的关注事件，并在毫秒级别基于期望终态做出对监听事件的处理，比如对应用的自动化容灾响应或是滚动升级等高级运维操作。
-
-Operator 的发布一般包括：
-
-- CRD + CR：CRD 用于定义领域相关的 schema，与之对应的 CR 用于描述实例级别的领域相关信息。
-- Controller：用来管理 CR，同时也会涉及到一些核心资源。
-
 ### 历史
 
 CoreOS 在 2016 年底提出了 Operator 的概念，当时的一段官方定义如下：“An Operator represents human operational knowledge in software, to reliably manage an application.”
@@ -140,6 +127,25 @@ CoreOS 是最早的一批基于 k8s 提供企业级容器服务解决方案的�
 
 然而，巨大的压力并没有让 Operator 昙花一现，就此消失。相反，社区大量的 Operator 开发和使用者仍旧拥护着 Operator 清晰自由的设计理念，继续维护演进着自己的应用项目。同时很多云服务提供商也并没有放弃 Operator，Operator  简洁的部署方式和易复制，自由开放的代码实现方式使其维护住了大量忠实粉丝。在用户的选择面前，强如谷歌、红帽这样的巨头也不得不做出退让。最终，TPR 并没有被彻底废弃，而是由 CRD（Custom Resource Definition）资源模型范式代替。2018 年初，RedHat 完成了对 CoreOS 的收购，并在几个月后发布了 Operator Framework，通过提供 SDK 等管理工具的方式进一步降低了应用开发与 K8s 底层 API 知识体系之间的依赖。至此，Operator 进一步巩固了其在 K8s 应用开发领域的重要地位。【1】
 
+### 功能
+
+在 K8s 的实现思想中，会使用 Controller 模式对 Etcd 里的 API 资源对象变化保持不断的监听（Watch），并在 Controller 中对指定事件进行响应处理，针对不同的 API 资源可以在对应的控制器中添加相应的业务逻辑，通过这种方式完成应用编排中各阶段的事件处理。而 Operator 正是基于 controller 模式，允许应用开发者通过扩展 k8s API 资源的方式，将复杂的分布式应用集群抽象为一个自定义的 API 资源，通过对自定义 API 资源的请求可以实现基本的运维操作，而在 Operator 中开发者可以专注实现应用在运行时管理中遇到的相关复杂逻辑。Operator 定义了一组在 k8s 集群中打包和部署复杂业务应用的方法，Operator 主要是为解决特定应用或服务关于如何部署、运行及出现问题时如何处理提供的一种特定的自定义方式。比如：
+
+- 部署：按需部署应用服务（总不能用一大堆 configmap 来管理吧）
+- 弹性伸缩：
+- 备份/还原：实现应用状态的备份和还原，完成版本升级
+- 主备切换：为分布式应用进行 master 选举，例如 etcd
+- 故障检测：
+
+Operator 首先是一个 controller，通过扩展 k8s API 来创建、配置和管理一个复杂、有状态的应用。它一般基于 k8s 的资源和 controller 相关概念开发，但还包含了很多业务领域或应用相关的逻辑，实现了一些自动化操作代替用户的手工操作。这些自动化运维操作往往是一些最佳实践，例如动态扩容等。Operator 定义了一组在 k8s 集群中打包和部署复杂业务应用的方法，它可以方便地在不同集群中部署并在不同的客户间传播共享。同时 Operator 还提供了一套应用在运行时的监控管理方法，领域专家通过将业务关联的运维逻辑写入到 operator  自身控制器中，而一个运行中的 Operator 就像一个 7*24 不间断工作的优秀运维团队，可以时刻监控应用自身状态和该应用在 k8s 集群中的关注事件，并在毫秒级别基于期望终态做出对监听事件的处理，比如对应用的自动化容灾响应或是滚动升级等高级运维操作。
+
+### 组成
+
+Operator 的发布一般包括：
+
+- CRD + CR：CRD 用于定义领域相关的 schema，与之对应的 CR 用于描述实例级别的领域相关信息。
+- Controller：用来管理 CR，同时也会涉及到一些核心资源。
+
 ### 生命周期
 
 - 开发者使用 Operator SDK 创建一个 Operator 项目；
@@ -150,6 +156,11 @@ CoreOS 是最早的一批基于 k8s 提供企业级容器服务解决方案的�
 - Operator 实例会根据配置创建所需的业务应用，OLM 和 Operator Metering 等组件可以帮助用户完成业务应用对应的运维和监控采集等管理操作。
 
 <img src="figures/image-20220905093941148.png" alt="image-20220905093941148" style="zoom:33%;" />
+
+### Controller vs. Operator
+
+- Controller：实现了控制循环，它通过 kube-apiserver 观测集群中的共享状态、进行必要的变更，尝试把当前状态转换到期望的目标状态。Controller 可以观察并操作 k8s 的核心资源以及用户自定义 CRD 资源。
+- Operator：Operator 是一种 Controller，但除了控制逻辑，它还会包含一些额外运维逻辑，如应用的生命周期管理。Putting operational knowledge into software
 
 ## Lab
 
@@ -180,9 +191,9 @@ kubectl get crd1s
 
 - [基于社区 sample controller 样例的 app](50_app/README.md)
 
-### sample controller/controller
+### sample controller/app-controller
 
-- [基于社区 sample controller 样例的 controller](55_app-controller/README.md)
+- [基于社区 sample controller 样例的 app-controller](55_app-controller/README.md)
 
 ### kubebuilder
 
