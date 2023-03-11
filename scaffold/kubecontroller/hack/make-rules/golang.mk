@@ -11,8 +11,16 @@ ifeq ($(ROOT_PACKAGE),)
 endif
 
 GOPATH := $(shell go env GOPATH)
+
 ifeq ($(origin GOBIN), undefined)
 	GOBIN := $(GOPATH)/bin
+endif
+
+# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
+ifeq (,$(shell go env GOBIN))
+	GOBIN=$(shell go env GOPATH)/bin
+else
+	GOBIN=$(shell go env GOBIN)
 endif
 
 COMMANDS ?= $(filter-out %.md, $(wildcard ${ROOT_DIR}/cmd/*))
@@ -29,9 +37,11 @@ endif
 .PHONY: go.run.%
 go.run.%:
 	@echo "===========> Running $*"
-	@$(GO) run cmd/$*/main.go -c configs/kubecontroller.yaml
+	@$(GO) run cmd/reconcilers/$*/main.go -c configs/kubecontroller.yaml
 
 
 .PHONY: go.run
 go.run:
+	@echo "===========> Running Hub"
+	@$(GO) run cmd/hub/main.go -c configs/kubecontroller.yaml
 

@@ -2,7 +2,7 @@ module github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller
 
 go 1.18
 
-replace github.com/rebirthmonkey/k8s-dev => ../../../k8s-dev
+//replace github.com/rebirthmonkey/k8s-dev => ../../../k8s-dev
 
 require (
 	github.com/gin-gonic/gin v1.9.0

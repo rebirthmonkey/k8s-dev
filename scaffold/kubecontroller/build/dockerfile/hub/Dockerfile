@@ -1,6 +1,6 @@
 # Build the manager binary
 FROM golang:1.18 as builder
-RUN apt-get -y update && apt-get -y install upx
+#RUN apt-get -y update && apt-get -y install upx
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -18,12 +18,15 @@ COPY pkg pkg/
 COPY configs configs/
 
 # Build
-ARG VERSION
-ARG COMMIT
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a \
-    -ldflags="-s -w -X 'hub.docker.com/rebirthmonkey/k8s-dev/pkg/version.Version=${VERSION}' -X 'hub.docker.com/rebirthmonkey/k8s-dev/pkg/version.Commit=${COMMIT}'" \
-    -o hub main.go && \
-    upx --brute -9 hub
+#ARG VERSION
+#ARG COMMIT
+#RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a \
+#    -ldflags="-s -w -X 'hub.docker.com/rebirthmonkey/k8s-dev/pkg/version.Version=${VERSION}' -X 'hub.docker.com/rebirthmonkey/k8s-dev/pkg/version.Commit=${COMMIT}'" \
+#    -o hub main.go && \
+#    upx --brute -9 hub
+
+RUN CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -o hub main.go
+
 
 # Use alpine as minimal base image to package the manager binary
 FROM alpine:3.13.6
@@ -36,7 +39,7 @@ RUN apk update \
        && rm -rf /var/cache/apk/* \
        && /bin/bash
 
-COPY configs/kubeconfig.yaml /opt/kubecontroller/configs/
+COPY configs/kubecontroller.yaml /opt/kubecontroller/configs/
 
 RUN chmod -R 777 /opt/kubecontroller/*
 RUN mkdir /opt/kubecontroller/logs \

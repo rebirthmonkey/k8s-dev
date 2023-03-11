@@ -1,9 +1,26 @@
-SHELL := /bin/bash
+#SHELL := /bin/bash
 
-HUB ?= hub.docker.com/rebirthmonkey
-HUB_IMAGE ?= ${HUB}/hub:$(VERSION)
-VERSION ?= $(shell git describe --always --tags)
+# Setting SHELL to bash allows bash commands to be executed by recipes.
+# Options are set to exit when a recipe line exits non-zero or a piped command fails.
+SHELL = /usr/bin/env bash -o pipefail
+.SHELLFLAGS = -ec
+
+
+# set the version number. you should not need to do this
+# for the majority of scenarios.
+ifeq ($(origin VERSION), undefined)
+	VERSION := $(shell git describe --tags --always --match='v*')
+#	VERSION ?= $(shell git describe --always --tags)
+endif
+
 COMMIT = $(shell git rev-parse HEAD)
+
+
+# Check if the tree is dirty.  default to dirty
+GIT_TREE_STATE:="dirty"
+ifeq (, $(shell git status --porcelain 2>/dev/null))
+	GIT_TREE_STATE="clean"
+endif
 
 
 # include the common make file
@@ -26,18 +43,6 @@ endif
 ifeq ($(origin TMP_DIR),undefined)
 TMP_DIR := $(OUTPUT_DIR)/tmp
 $(shell mkdir -p $(TMP_DIR))
-endif
-
-# set the version number. you should not need to do this
-# for the majority of scenarios.
-ifeq ($(origin VERSION), undefined)
-VERSION := $(shell git describe --tags --always --match='v*')
-endif
-
-# Check if the tree is dirty.  default to dirty
-GIT_TREE_STATE:="dirty"
-ifeq (, $(shell git status --porcelain 2>/dev/null))
-	GIT_TREE_STATE="clean"
 endif
 
 # Minimum test coverage
