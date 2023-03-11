@@ -116,31 +116,48 @@ MaxConcurrentReconciles: r.Concurrence,}).
 
 
 
-### SchemeBuilder注册机制
+### scheme注册
 
-SchemeBuilder 设计模式用于不同模块在初始化时将自身信息注册到 scheme 注册表中去。其原理是构建一个回调函数列表，并在某一时刻统一执行。它先通过 Register() 注册一堆用于将 GV-Type 添加到 scheme 中的回调函数，然后通过 AddToManager() 执行所有回调函数实现真正的 scheme 注册。
+Scheme 注册采用了 Builder 设计模式，用于在不同模块初始化时“主动”将自身信息注册到 scheme 中，从而实现每个模块的“热插拔”。其原理是构建一个回调函数列表，并在某一时刻统一执行。它先通过 Register() 注册一堆用于将 GVK-Type 添加到 scheme 中的回调函数，然后通过 AddToManager() 执行所有回调函数实现真正的 scheme 注册。
 
 #### 数据结构
 
-scheme 包含一组 Builder（每个 Builder 对应一个 GV），每个 Builder 就是一个 Callback 函数 list。每个 Callback 函数都是用于操作 scheme，其实就是调用 scheme.AddKnownTypes() 方法将自身 GV-Type 注册到 scheme 中。
+scheme 包含一组 schemeBuilder（每个 schemeBuilder 对应一个 GV），每个 Builder 就是一个回调函数列表。每个回调函数都是用于操作 scheme，其实就是调用 scheme.AddKnownTypes() 方法将自身 GV-Type 注册到 scheme 中。
 
 #### 流程
 
-- 创建 Builder（回调函数列表）：在 `groupversion_info.go` 文件中为某个 GroupVersion 创建一个 Builder。
+- 创建 schemeBuilder：在 `groupversion_info.go` 文件中为某个 GroupVersion 创建一个 schemeBuilder。
 
 ```go
 SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 ```
 
-- 将回调函数添加到 Builder 中：在 xxx_type.go 文件的 init() 函数中，通过 SchemeBuilder.Register() 函数，将对应的 Type（Go struct）注册到对应 GV 的 Builder 列表中。
+- 将回调函数添加到 schemeBuilder 中：在 xxx_type.go 文件的 init() 函数中，通过 SchemeBuilder.Register() 函数，将对应的 Type（Go struct）注册到本 GV 的 schemeBuilder 中。
 
 ```go
 func init() {
   SchemeBuilder.Register(&App{}, &AppList{})
 }
+// 其背后实际注册的函数是：
+func(scheme *runtime.Scheme) error {		scheme.AddKnownTypes(builder.GroupVersion, &App{}, &AppList{})}
 ```
 
-- 执行 Builder 内所有注册的回调函数：在 main.go 文件的 init() 函数中，所有注册的回调函数要延迟到 AddToScheme() 的那一刻才真正执行、GVK 被添加到 Scheme 中。
+- 执行 schemeBuilder 内所有注册的回调函数：在 main.go 文件的 init() 函数中，通过对应 GV 的 schemeBuilder，所有注册的回调函数要延迟到此刻通过 AddToScheme() 才真正执行，GVK-Type 被真正添加到 scheme 中。
+
+```go
+utilruntime.Must(atv1.AddToScheme(scheme))
+```
+
+### Reconciler组装
+
+如 Controller 中介绍，每个 ctrl.Manager 包含一个 Controller，而在 Controller 中包含了 Reconciler。在完成 Reconciler struct 的定义后，需要通过 Reconciler 的 SetupWithManager() 函数将它组装到一个 Manager 内，具体方法包括：
+
+```go
+(&controllers.AtReconciler{
+		Client: mgr.GetClient(),
+		Scheme: scheme,
+	}).SetupWithManager(mgr)
+```
 
 ## Layout
 

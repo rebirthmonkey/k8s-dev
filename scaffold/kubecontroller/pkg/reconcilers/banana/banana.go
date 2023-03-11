@@ -11,7 +11,6 @@ import (
 	"github.com/rebirthmonkey/k8s-dev/pkg/apis"
 	"github.com/rebirthmonkey/k8s-dev/pkg/pm"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
-	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	controllerapis "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
@@ -32,7 +31,7 @@ var (
 
 func init() {
 	apis.SetPhaseMachine(controllerapis.ResourceBananas, PhaseMachineDef)
-	registry.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
+	reconcilermgr.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
 		rmgr.WithPhaseMachine(&demov1.Banana{}, pm.New(PhaseMachineDef()))
 		return nil
 	})

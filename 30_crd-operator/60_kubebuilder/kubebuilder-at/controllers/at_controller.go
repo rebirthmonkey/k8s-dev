@@ -154,7 +154,7 @@ func newExecutionPod(cr *atv1.At) *corev1.Pod {
 	}
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-execution-pod",
+			Name:      cr.Name + "-pod",
 			Namespace: cr.Namespace,
 			Labels:    labels,
 		},

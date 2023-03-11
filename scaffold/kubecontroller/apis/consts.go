@@ -2,5 +2,5 @@ package apis
 
 const (
 	ResourceAts     = "ats"
-	ResourceBananas = "Bananas"
+	ResourceBananas = "bananas"
 )

@@ -28,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
-	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
 	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
 )
@@ -36,7 +35,7 @@ import (
 var _ reconcile.Reconciler = &Reconciler{}
 
 func init() {
-	registry.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
+	reconcilermgr.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
 		utilruntime.Must(demov1.AddToScheme(rmgr.GetScheme()))
 		rmgr.With(&Reconciler{
 			Client: rmgr.GetClient(),

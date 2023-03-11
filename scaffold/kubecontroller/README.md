@@ -33,8 +33,6 @@ ReconcilerManager 封装了 k8s 原生的 runtime-controller/Manager。其 struc
 
 其具体操作包括：
 
-- With()：对应 ReconcilerSetuper 的 With()，将一个 ReconcilerSetuper 添加到 ReconcilerSetuper 列表中 
-- Setup()：对应 ReconcilerSetuper 的 Setup()，正式安装 ReconcilerSetuper 列表中的所有 Setuper。
 - Run()：启动整个 ReconcilerManager，通过 k8s Manager 的 Start() 函数启动。
 
 ReconcilerManager 封装 k8s 原生 Manager 的主要目的是：
@@ -44,21 +42,31 @@ ReconcilerManager 封装 k8s 原生 Manager 的主要目的是：
 - 提供可以根据配置文件来启用、禁止某些 Reconciler 的机制。
 - 支持资源过滤，仅仅让 Reconciler 看到一部分资源。
 
-#### Builder：注册GVK到Scheme
+#### 注册Scheme
 
-ReconcilerBuilder 的本质是用于初始化 Reconciler struct 的回调函数列表，它 SchemeBuilder 设计模式，先通过 registry.Register() 注册一堆用于初始化各种 API 资源的 Reconciler struct（通过回调函数），然后通过 register.AddToManager() 执行所有回调函数实现真正的 API 资源 Reconciler struct 初始化。
+Builder 的目的是注册 GV-Type 到 Scheme。它采用 Builder 设计模式，先通过 Register() 注册一堆用于初始化各种 API 资源的回调函数，然后通过 AddToScheme() 执行所有回调函数实现真正的 API 资源在 Scheme 的注册。
 
-- Register()：注册回调（callback）函数。可以注册若干回调函数，这些回调函数接受 ReconcilerManager 作为总调度器，并且为其添加 Reconciler struct。在 main() 中，以 `import _ .../reconcilers/xxx` ，通过 registry.Register() 转一道，自动将每个 reconciler 的 struct 以 Setuper 的形式（回调函数）注册到指定的 ReconcilerManager 的 ReconcilerBuilder（回调函数列表）中。
-- AddToManager()：执行所有回调函数。ReconcilerManager 的回调行为要延迟到 AddToManager() 的那一刻才真正执行。在 ReconcilerApp.Manager.Run() 中，通过 registry.AddToManager() 转一道，再调用 ReconcilerBuilder.AddToManager() 执行。
+- 创建 SchemeBuilder：在每个 GV 包的 groupversion_info.go 文件中创建。
+- Register()：在每个 xxx_types.go 的 init() 函数中，注册回调函数。
+- AddToScheme()：在每个资源的 reconcilers/Xxx/xxx.go 文件的 init() 函数中统一执行 Scheme 的添加。
 
-registry 是 Reconciler struct 转换到 ReconcilerManager 的一层转换胶水。
+#### 延时Builder
 
-#### Setuper：安装Reconciler到RMgr
+因为在执行上述 AddToScheme(scheme)，所需的 scheme 还未被创建，所以通过 Builder 设计模式将其延迟到 PrepareRun 阶段。
 
-ReconcilerSetuper 相当于规定了将本 Reconciler 安装到 ReconcilerMgr 的接口，其作用有 1/ 添加本 Reconciler 到 ReconcilerMgr 中进行缓存，2/ 在 ReconcilerMgr 缓存同步后统一将 ReconcilerMgr 缓存中的 Reconciler 们安装到 k8s 的 runtime-controller/Manager。
+每个 ReconcilerMgr 自身通过 singleton 设计模式维护一个 ReconcilerBuilder 列表，其中每个 Builder 表示需要延时调用的回调函数。
 
-- With() 添加：将一个 ReconcilerSetuper 缓存到 ReconcilerSetuper 列表中。
-- Setup() 安装：将 ReconcilerSetuper 列表中的每个  ReconcilerSetuper，通过 SetupWithManager(mgr) 正式在 RMgr.RuntimeManager（k8s 原生的 runtime-controller/Manager） 中安装。
+- Register()：注册回调函数到 ReconcilerBuilder 回调函数列表中。可以注册若干回调函数，这些回调函数接受 ReconcilerManager 作为回调函数列表的载体。在 main() 中，以 `import _ .../reconcilers/xxx` 的方式自动（通过 init() 函数）将每个 builder 注册到指定的 ReconcilerManager 的 ReconcilerBuilder 回调函数列表中。
+- AddToManager()：在 ReconcilerManager 的 PrepareRun() 函数中，执行 AddToManager()，到那一刻才真正执行回调函数列表中的函数。
+
+#### 组装Setuper
+
+ReconcilerMgr 通过 Setuper 方式（其背后还是 Builder 设计模式）、以热插拔的方式将每个 Reconciler 的组装到 Mgr 中的过程自动化。
+
+Setuper 作为借口，相当于规定了将本 Reconciler 安装到 ReconcilerMgr 的接口，其作用有 1/ 注册本 Reconciler 到 ReconcilerMgr 的 setupers 列表中，2/ 在 ReconcilerMgr 中统一将 setupers 列表中的 Reconciler 们组装到 runtime-controller/Manager 中。
+
+- With() 注册：对应 ReconcilerSetuper 的 With()，将一个 ReconcilerSetuper 添加到 ReconcilerMgr 的 setupers 列表中。该步骤会在“延时Builder”的 Register() 回调函数中执行。 
+- Setup() 统一组装：对应 ReconcilerSetuper 的 Setup()，正式组装 setupers 列表中的所有 Setuper 到 ReconcilerMgr.RuntimeManager（k8s 原生的 runtime-controller/Manager） 中。该步骤会在 ReconcilerManager 的 PrepareRun() 函数中执行。
 
 ### 单个Reconciler
 
@@ -77,7 +85,7 @@ ResourceMetadatas 是为了兼容独立 APIServer 和 k8s crd 设置的元数据
 其具体操作包括：
 
 - init()：对应 ReconcilerApp 的
-- SetupWithManager()：将该 Reconciler（内部称为 Controller）添加到 Manager 中。
+- SetupWithManager()：将该 Reconciler（内部称为 Controller）组装到 Manager 中。
 - Reconciler()：循环处理的核心业务逻辑。
 
 #### 运行
@@ -274,27 +282,24 @@ kubectl -s http://127.0.0.1:6080 -n default get users
 
 #### 基本概念
 
-- WorkflowDefinition：流程模板，对应 typs.go 中的 Spec
-  - DAG：有向无环图，由 Object（流程模板中的元素）组成，Object 具体分为：
-    - Event：
-      - Start：
-      - Waiting：做一些 pre-check 以及初始化配置
-      - Pending：
-      - Doing：真正开始执行 execte()
-      - End：Succeeded、Failed、Aborted
-  
-    - Gateway：
-      - 分散：根据判断条件选择不同分支
-      - 聚合：多个分支聚合到一起
-  
-    - Activity：可以注册不同的 ActivityExecutor Type，来实现不同的 Activity 类型
-      - Executor：对流程中具体执行内容的封装，如 KubeController、Binary 等
-- WorkflowExecution：运行中的流程实例，记录流程当前执行的状态，对应 types.go 中的 Status
-  - DAG：
-  - Entry：流程执行过程中的元素，Definition 中 Object 的实例化。
+- WorkflowDefinition：流程模板，对应 typs.go 中的 Spec。整个 WorkflowDefinition 的结构是 DAG（有向无环图），由 Object（流程模板中的元素）组成，Object 具体分为：
+  - Event：
+    - Start：
+    - Waiting：做一些 pre-check 以及初始化配置
+    - Pending：
+    - Doing：真正开始执行 execte()
+    - End：Succeeded、Failed、Aborted
+  - Gateway：
+    - 分散：根据判断条件选择不同分支
+    - 聚合：多个分支聚合到一起
+  - Activity：可以注册不同的 ActivityExecutor Type，来实现不同的 Activity 类型
+    - Executor：对流程中具体执行内容的封装，如 KubeController、Binary 等
+- WorkflowExecution：运行中的流程实例，记录流程当前执行的状态，对应 types.go 中的 Status。其结构也是 DAG，由 Entry（流程执行过程中的元素，Definition 中 Object 的实例化）组成。
+  - Event：
     - Phase：运行时 DAG 实时流转的状态，对应 Object/Event
     - Reason：对 entry 状态的解释
     - FinishTime：结束时间00
+  
 - Engine：具体执行 workflow 的 Executor 的接口
   - EngineExecutor：Engine 接口的实现
     - Config：配置项

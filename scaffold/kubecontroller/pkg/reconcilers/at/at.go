@@ -18,6 +18,7 @@ package at
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -34,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
-	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 	"github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis"
 	demov1 "github.com/rebirthmonkey/k8s-dev/scaffold/kubecontroller/apis/demo/v1"
 )
@@ -42,7 +42,7 @@ import (
 var _ reconcile.Reconciler = &Reconciler{}
 
 func init() {
-	registry.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
+	reconcilermgr.Register(func(rmgr *reconcilermgr.ReconcilerManager) error {
 		utilruntime.Must(corev1.AddToScheme(rmgr.GetScheme())) // because we will use Pod.
 		utilruntime.Must(demov1.AddToScheme(rmgr.GetScheme()))
 		rmgr.With(&Reconciler{
@@ -84,86 +84,100 @@ func (r *Reconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.
 	logger := log.WithValues("at", request.Name)
 	logger.Info("=== Reconciling At")
 
-	at := &demov1.At{}
-	err := r.Get(context.TODO(), request.NamespacedName, at)
+	// Fetch the At instance
+	atInstance := &demov1.At{}
+	err := r.Get(context.TODO(), request.NamespacedName, atInstance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request - return and don't requeue:
+			// Request object not foundPod, could have been deleted after reconcile request - return and don't requeue:
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
 	}
 
-	if at.Status.Phase == "" {
-		at.Status.Phase = demov1.AtPhasePending
+	// If no phase set, default to pending (the initial phase):
+	if atInstance.Status.Phase == "" {
+		atInstance.Status.Phase = demov1.AtPhasePending
 	}
 
-	switch at.Status.Phase { // state machine: PENDING -> RUNNING -> DONE
+	// the state diagram PENDING -> RUNNING -> DONE
+	switch atInstance.Status.Phase {
 	case demov1.AtPhasePending:
-		logger.Info("=== Phase: PENDING")
+		logger.Info("Phase: PENDING")
 
-		logger.Infof("Checking schedule: %s", at.Spec.Schedule)
-		d, err := timeUntilSchedule(at.Spec.Schedule)
+		// As long as we haven't executed the command yet, we need to check if it's time already to act:
+		logger.Infow("Checking schedule", "Target", atInstance.Spec.Schedule)
+		// Check if it's already time to execute the command with a tolerance of 2 seconds:
+		d, err := timeUntilSchedule(atInstance.Spec.Schedule)
 		if err != nil {
-			logger.Errorf("Schedule parsing failure %s", err)
+			logger.Errorw(err.Error(), "Schedule parsing failure")
+			// Error reading the schedule. Wait until it is fixed.
 			return reconcile.Result{}, err
 		}
 
-		logger.Infof("Schedule parsing done with Result %d", d)
+		logger.Infow("Schedule parsing done", "Result", fmt.Sprintf("diff=%v", d))
 		if d > 0 {
+			// Not yet time to execute the command, wait until the scheduled time
 			return reconcile.Result{RequeueAfter: d}, nil
 		}
 
-		logger.Infof("It's time! Ready to execute the cmd: %s", at.Spec.Command)
-		at.Status.Phase = demov1.AtPhaseRunning
+		logger.Infow("It's time!", "Ready to execute", atInstance.Spec.Command)
+		atInstance.Status.Phase = demov1.AtPhaseRunning
 	case demov1.AtPhaseRunning:
-		logger.Info("=== Phase: RUNNING")
-		pod := newPodForCR(at)
-		// Set at as the owner and controller
-		if err := controllerutil.SetControllerReference(at, pod, r.Scheme); err != nil {
-			return reconcile.Result{}, err // requeue with error
-		}
+		logger.Info("Phase: RUNNING")
 
-		found := &corev1.Pod{}
-		err = r.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
-		if err != nil {
-			if errors.IsNotFound(err) { // Try to see if the pod already exists
-				err2 := r.Create(context.TODO(), pod)
-				if err2 != nil {
-					return reconcile.Result{}, err2
-				}
-				logger.Infof("Pod %s launched", pod.Name)
-			}
-			at.Status.Phase = demov1.AtPhaseDone
+		executionPod := newExecutionPod(atInstance)
+
+		// Set At atInstance as the owner and controller
+		if err := controllerutil.SetControllerReference(atInstance, executionPod, r.Scheme); err != nil {
+			// requeue with error
 			return reconcile.Result{}, err
 		}
 
-		if found.Status.Phase == corev1.PodFailed || found.Status.Phase == corev1.PodSucceeded {
-			logger.Infof("Container terminated with reason: %s, and message: %s", found.Status.Reason, found.Status.Message)
-			at.Status.Phase = demov1.AtPhaseDone
+		foundPod := &corev1.Pod{}
+		err = r.Get(context.TODO(), types.NamespacedName{Name: executionPod.Name, Namespace: executionPod.Namespace}, foundPod)
+		// Try to see if the executionPod already exists and if not
+		// (which we expect) then create a one-shot executionPod as per spec:
+		if err != nil && errors.IsNotFound(err) {
+			err = r.Create(context.TODO(), executionPod) // launch the execution pod
+			if err != nil {
+				// requeue with error
+				return reconcile.Result{}, err
+			}
+			logger.Infow("Pod launched", "name", executionPod.Name)
+			atInstance.Status.Phase = demov1.AtPhaseDone
+		} else if err != nil {
+			// requeue with error
+			return reconcile.Result{}, err
+		} else if foundPod.Status.Phase == corev1.PodFailed || foundPod.Status.Phase == corev1.PodSucceeded {
+			logger.Infow("Pod terminated", "reason", foundPod.Status.Reason, "message", foundPod.Status.Message)
+			atInstance.Status.Phase = demov1.AtPhaseDone
+		} else {
+			// don't requeue because it will happen automatically when the executionPod status changes
+			return reconcile.Result{}, nil
 		}
 
-		at.Status.Phase = demov1.AtPhaseDone
-		return reconcile.Result{}, nil
 	case demov1.AtPhaseDone:
-		logger.Info("=== Phase: DONE")
+		logger.Info("Phase: DONE")
 		return reconcile.Result{}, nil
+
 	default:
-		logger.Info("=== Phase: NOP")
+		logger.Info("NOP")
 		return reconcile.Result{}, nil
 	}
 
-	// Update the at, setting the status to the respective phase
-	err = r.Status().Update(context.TODO(), at)
+	// Update the At instance, setting the status to the respective phase:
+	err = r.Status().Update(context.TODO(), atInstance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
+	// Don't requeue. We should be reconcile because either the executionPod or the CR changes.
 	return reconcile.Result{}, nil
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *demov1.At) *corev1.Pod {
+func newExecutionPod(cr *demov1.At) *corev1.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}

@@ -28,6 +28,7 @@ type ReconcilerManager struct {
 	client.Client
 	context.Context
 
+	scheme             *runtime.Scheme
 	setupers           []ReconcilerSetuper
 	enabledControllers []string
 }
@@ -94,11 +95,12 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 	if rmgr.Kubeconfig == "" {
 		rmgr.Kubeconfig = clientcmd.RecommendedHomeFile
 	}
-
 	config, err := clientcmd.BuildConfigFromFlags("", rmgr.Kubeconfig)
 
+	rmgr.scheme = scheme
+
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
-		Scheme:           scheme,
+		Scheme:           rmgr.scheme,
 		Port:             9443,
 		LeaderElection:   false,
 		LeaderElectionID: "465bd3f6.wukong.com",
@@ -108,13 +110,18 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 		os.Exit(1)
 	}
 
-	// Add all PM GV-Type pairs to the scheme
-	//apis.AddToScheme(scheme)
-	AddToScheme(scheme)
-
 	rmgr.Manager = mgr
 	rmgr.Client = mgr.GetClient()
 	rmgr.Context = ctrl.SetupSignalHandler()
+
+	AddToScheme(rmgr.scheme)
+	AddToManager(rmgr)
+
+	if err := rmgr.Setup(); err != nil {
+		log.Errorf("[ReconcilerManager] Failed to setup reconcilers: %s", err)
+		os.Exit(1)
+	}
+
 	return &PreparedReconcilerManager{
 		ReconcilerManager: rmgr,
 	}

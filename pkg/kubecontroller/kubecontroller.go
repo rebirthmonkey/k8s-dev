@@ -1,8 +1,6 @@
 package kubecontroller
 
 import (
-	"os"
-
 	"github.com/rebirthmonkey/go/pkg/log"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -11,7 +9,6 @@ import (
 	amgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/apiextmgr/registry"
 	k8sclient "github.com/rebirthmonkey/k8s-dev/pkg/k8s/client"
 	"github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr"
-	rmgrregistry "github.com/rebirthmonkey/k8s-dev/pkg/reconcilermgr/registry"
 )
 
 var (
@@ -65,12 +62,6 @@ func (pmgr *PreparedKubeController) Run() error {
 	var eg errgroup.Group
 
 	eg.Go(func() error {
-		rmgrregistry.AddToManager(pmgr.ReconcilerManager)
-		if err := pmgr.ReconcilerManager.Setup(); err != nil {
-			log.Errorf("[PreparedKubeController] Failed to setup reconcilers: %s", err)
-			os.Exit(1)
-		}
-
 		if err := pmgr.PreparedReconcilerManager.Run(); err != nil {
 			log.Error("[PreparedKubeController] Error occurred while controller manager is running")
 			return err
