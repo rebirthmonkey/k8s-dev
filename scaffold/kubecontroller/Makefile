@@ -11,6 +11,8 @@ HUB ?= hub.docker.com/rebirthmonkey
 
 include hack/make-rules/common.mk
 include hack/make-rules/golang.mk
+include hack/make-rules/k8s.mk
+include hack/make-rules/test.mk
 include hack/make-rules/docker.mk
 
 
@@ -24,6 +26,11 @@ run:
 .PHONY: run.%
 run.%:
 	@$(MAKE) go.run.$*
+
+.PHONY: test.%
+test.%:
+	@$(MAKE) test.k8s.$*
+
 
 .PHONY: docker-build.%
 docker-build.%:

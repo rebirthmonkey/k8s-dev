@@ -6,7 +6,6 @@
 DOCKER := docker
 DOCKER_SUPPORTED_API_VERSION ?= 1.31
 DOCKER_IMAGE_VERSION := v1.0
-#HUB_IMAGE ?= ${HUB}/hub:$(VERSION)
 
 DOCKER_NETWORK ?= --network=host
 DOCKER_ARGS ?= --build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT)
