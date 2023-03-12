@@ -95,11 +95,12 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 	if rmgr.Kubeconfig == "" {
 		rmgr.Kubeconfig = clientcmd.RecommendedHomeFile
 	}
-	config, err := clientcmd.BuildConfigFromFlags("", rmgr.Kubeconfig)
+	//config, err := clientcmd.BuildConfigFromFlags("", rmgr.Kubeconfig)
 
 	rmgr.scheme = scheme
 
-	mgr, err := ctrl.NewManager(config, ctrl.Options{
+	//mgr, err := ctrl.NewManager(config, ctrl.Options{
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:           rmgr.scheme,
 		Port:             9443,
 		LeaderElection:   false,

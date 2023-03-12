@@ -1,0 +1,16 @@
+domain: wukong.com
+layout:
+- go.kubebuilder.io/v3
+projectName: at
+repo: github.com/rebirthmonkey/k8s-dev/at
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: wukong.com
+  group: demo
+  kind: At
+  path: github.com/rebirthmonkey/k8s-dev/at/api/v1
+  version: v1
+version: "3"
