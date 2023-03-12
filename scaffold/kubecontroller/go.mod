@@ -7,7 +7,7 @@ go 1.18
 require (
 	github.com/gin-gonic/gin v1.9.0
 	github.com/rebirthmonkey/go v0.0.0-20230216054632-ea7df8ea7f8e
-	github.com/rebirthmonkey/k8s-dev v0.1.0
+	github.com/rebirthmonkey/k8s-dev v0.1.1
 	k8s.io/api v0.26.2
 	k8s.io/apimachinery v0.26.2
 	sigs.k8s.io/controller-runtime v0.14.5

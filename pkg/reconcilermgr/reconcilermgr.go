@@ -6,7 +6,6 @@ import (
 
 	"github.com/rebirthmonkey/go/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -92,9 +91,9 @@ func (rmgr *ReconcilerManager) GetScheme() *runtime.Scheme {
 func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedReconcilerManager {
 	log.Info("[ReconcilerManager] PrepareRun")
 
-	if rmgr.Kubeconfig == "" {
-		rmgr.Kubeconfig = clientcmd.RecommendedHomeFile
-	}
+	//if rmgr.Kubeconfig == "" {
+	//	rmgr.Kubeconfig = clientcmd.RecommendedHomeFile
+	//}
 	//config, err := clientcmd.BuildConfigFromFlags("", rmgr.Kubeconfig)
 
 	rmgr.scheme = scheme

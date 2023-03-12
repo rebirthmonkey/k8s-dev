@@ -9,15 +9,17 @@ NAMESPACE ?= default
 
 .PHONY: k8s.install.%
 k8s.install.%: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	@$(KUBECTL) apply -f manifests/$*/crd.yaml
+	@$(KUSTOMIZE) build configs/$*/crd | kubectl apply -f -
+
 
 .PHONY: k8s.uninstall.%
 k8s.uninstall.%:
-	@$(KUBECTL) delete -f manifests/$*/crd.yaml
+	@$(KUSTOMIZE) build configs/$*/crd | kubectl delete --ignore-not-found=true -f -
+
 
 .PHONY: k8s.deploy.%
 k8s.deploy.%: kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd configs/$*/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd configs/$*/manager && $(KUSTOMIZE) edit set image controller=${HUB}/$*:$(DOCKER_IMAGE_VERSION)
 	$(KUSTOMIZE) build configs/$*/default | kubectl apply -f -
 
 .PHONY: k8s.undeploy.%

@@ -28,9 +28,7 @@ apiextmgr:
       bind-port: 9443 # 使用 HTTPS 安全模式的端口号，设置为 0 表示不启用 HTTPS，默认为 8443
       tls:
         cert-file: /Users/ruan/workspace/k8s-dev/scaffold/kubecontroller/configs/cert/server.pem # 包含 x509 证书的文件路径，用 HTTPS 认证
-        #      cert-file: /etc/kubecontroller/cert/server.pem # 包含 x509 证书的文件路径，用 HTTPS 认证
         private-key-file: /Users/ruan/workspace/k8s-dev/scaffold/kubecontroller/configs/cert/server.key # TLS 私钥
-  #      private-key-file: /etc/kubecontroller/cert/server.key # TLS 私钥
 
 log:
   name: apiserver # Logger的名字

@@ -569,7 +569,7 @@ kubebuilder create api \
 - 创建 CRD：CRD 将会在 `config/crd/bases` 中创建
 
 ```shell
-make fanifests
+make manifests
 ```
 
 - 安装 CRD

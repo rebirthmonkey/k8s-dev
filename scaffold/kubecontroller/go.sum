@@ -331,8 +331,8 @@ github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/rebirthmonkey/go v0.0.0-20230216054632-ea7df8ea7f8e h1:/RMTbgtblLdGC5vs90tUWwI0JXKdzsjBd++BrnXuvt0=
 github.com/rebirthmonkey/go v0.0.0-20230216054632-ea7df8ea7f8e/go.mod h1:UdbN9njelouOpY9PXL17d0wDz3qNtDpjYvvfzSJfdhY=
-github.com/rebirthmonkey/k8s-dev v0.1.0 h1:xbfkmu2vg4rq5xjdyd26HzP/wIVVtcLEEBvNosRA4ss=
-github.com/rebirthmonkey/k8s-dev v0.1.0/go.mod h1:lqdhusXHjIwJs/N5kCfEqyg9Y5y88JDAn65QkYz9lOo=
+github.com/rebirthmonkey/k8s-dev v0.1.1 h1:myKKyuAlgS3/WblkYWbuusky6dJndpYIXlubZJk2s+U=
+github.com/rebirthmonkey/k8s-dev v0.1.1/go.mod h1:lqdhusXHjIwJs/N5kCfEqyg9Y5y88JDAn65QkYz9lOo=
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.4.2 h1:YwD0ulJSJytLpiaWua0sBDusfsCZohxjxzVTYjwxfV8=
 github.com/rivo/uniseg v0.4.2/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=

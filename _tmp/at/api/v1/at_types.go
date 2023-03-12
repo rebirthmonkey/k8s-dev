@@ -28,14 +28,19 @@ type AtSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of At. Edit at_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Schedule string `json:"schedule,omitempty"`
+	// Command is the desired command (executed in a Bash shell) to be executed.
+	Command string `json:"command,omitempty"`
 }
 
 // AtStatus defines the observed state of At
 type AtStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	Phase string `json:"phase,omitempty"`
 }
 
 //+kubebuilder:object:root=true
