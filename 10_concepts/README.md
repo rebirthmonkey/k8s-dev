@@ -303,6 +303,54 @@ make all
 
 
 
+## 安全
+
+### RBAC
+
+k8s 中的所有 API 对象都保存在 Etcd 中，对这些 API 对象的操作必须通过 APIServer 进行，其中一个重要的机制就是必须通过 APIserver 进行授权工作。
+
+#### Subject
+
+- UserAccount：针对人，this is the identity of who is accessing the resources。
+- Groups：
+- ServiceAccount：针对运行在 Pods 中的进程
+- Token：
+
+#### Role
+
+Role 是一组规则，定义了一组对 k8s API 对象的操作权限。例如 Role 可以包含列出 Pod 权限及列出 Deployment 权限，用于给某个 NameSpace 中的资源进行鉴权。Role 只是在当前 Role 所在的 Namespace 中定义了一个角色，其它 Namespace 下并不会出现这个Role。
+
+#### Binding
+
+Binding 定义了“被作用者”和“角色”的绑定关系。
+
+##### RoleBinding
+
+RoleBinding 作用域就只是在定义 RoleBinding 的 Namespace 中，将使规则在命名空间内生效。
+
+#### Scoped
+
+以上的 Role、RoleBinding 的作用范围在一个 Namespace 中，而还可以定义对整个 cluster 的 Role、RoleBinding。
+
+##### ClusterRole
+
+ClusterRole 是一组权限的集合，但与 Role 不同的是，ClusterRole 可以在包括所有 Namespace 和集群级别的资源或非资源类型进行鉴权。
+
+##### ClusterRoleBinding
+
+ClusterRoleBinding 将使规则在所有命名空间中生效，其作用域就是整个集群范围（所有 Namespace）。它表示同时整个集群（每个 Namespace）中定义了一个 role，所有 Namespace 下都有一个相同名称的 Role。
+
+#### 流程
+
+- 创建一个 ServiceAccount：
+  - 如果一个 Pod 没有声明 ServiceAccount Name，k8s 会自动在它的 Namespace 下创建一个名叫 default 的默认 ServiceAccount，然后分配给这个 Pod。但这个默认 ServiceAccount 并没有关联任何 Role，也就是说此时它有访问 APIServer 的绝大多数权限。当然，这个访问所需要的 Token，还是默认 ServiceAccount 对应的 Secret 对象为它提供的。
+- 给该 ServiceAccount 绑定一个 Secret：Secret 会自带 Token。
+- 创建一个 Role：
+- 创建一个 RoleBinding：用于绑定 ServiceAccount 和 Role。在有些版本的 k8s 中，在把 ServiceAccount 和 Role 进行绑定的时候会自动创建一个 Secret。这个 Secret 就是这个 ServiceAccount 对应跟 APIServer 进行交互的授权文件，一般称它为 Token。Token 文件的内容一般是证书或者密码，它以一个 Secret 对象的方式保存在 Etcd 中，候用户的 Pod 可以声明使用这个 ServiceAccount。
+- 使用 ServiceAccount/Token 来使用 k8s 资源：
+
+
+
 ## Lab
 
 ### scheme
@@ -314,3 +362,63 @@ make all
 
 - [runtime.object 操作](15_runtime-object/example.go)：实例化 pod 资源，再将 pod 资源转换为 runtime.object 资源，在将 runtime.object 资源转换回 pod 资源，最终通过 reflect 来验证转换是否等价。
 
+### RBAC
+
+#### Role/RoleBinding在同一NS
+
+PS：必须在 docker-for-desktop 环境下，在 kind-in-kind 环境下生成的 secret 不带 token（可能是集群设置的原因）。
+
+- 创建 test namespace
+
+```shell
+kubectl create ns test
+```
+
+- 创建 ServiceAccount
+
+```shell
+kubectl apply -f 61_sa.yaml
+```
+
+- 创建 Role、RoleBding
+
+```shell
+kubectl apply -f 62_role-bind.yaml
+```
+
+- 验证权限：验证结果 yes 代表已有该权限。
+
+```shell
+kubectl auth can-i -n test get secrets --as=system:serviceaccount:test:myaccount
+```
+
+- 创建 Secret：在 k8s 1.24 之后的版本，ServiceAccount 已经不会默认创建一个 Secret。
+
+```shell
+kubectl apply -f 63_secret.yaml
+```
+
+- 获取 TOKEN：
+
+```shell
+export TOKEN=$(kubectl -n test get secret myaccount-secret -o=jsonpath="{.data.token}" | base64 -D -i -)
+```
+
+- Test the permission：
+
+```shell
+curl -k -H "Authorization: Bearer $TOKEN" https://kubernetes.docker.internal:6443/api/v1/namespaces/test/secrets  # 可展示
+curl -k -H "Authorization: Bearer $TOKEN" https://kubernetes.docker.internal:6443/api/v1/namespaces/default/secrets  # 不可展示，因为没有 default namespace 的权限
+```
+
+PS：“Authorization:” 与 “Bearer” 间必须有个空格。
+
+- Cleanup：
+
+```shell
+kubectl delete ns test
+```
+
+#### Role/RoleBinding在不同NS
+
+- https://learnk8s.io/rbac-kubernetes

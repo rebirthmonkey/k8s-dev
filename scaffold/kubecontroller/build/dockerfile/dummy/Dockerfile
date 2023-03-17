@@ -1,6 +1,5 @@
 # Build the manager binary
 FROM golang:1.18 as builder
-#RUN apt-get -y update && apt-get -y install upx
 
 WORKDIR /workspace
 # Copy the Go Modules manifests

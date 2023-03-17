@@ -3,7 +3,7 @@
 
 ROOT_PACKAGE=~/workspace/k8s-dev/scaffold/kubecontroller
 VERSION_PACKAGE=github.com/rebirthmonkey/go/pkg/version
-HUB ?= hub.docker.com/rebirthmonkey
+HUB ?= wukongsun
 DOCKER_IMAGE_VERSION := v1.1
 
 

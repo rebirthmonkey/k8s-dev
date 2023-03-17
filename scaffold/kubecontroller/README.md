@@ -24,10 +24,6 @@
 
 #### 自带数据结构
 
-- 
-
-#### RuntimeManager
-
 ReconcilerManager 封装了 k8s 原生的 runtime-controller/Manager。其 struct 主要包括：
 
 - 配置信息：
@@ -41,9 +37,11 @@ ReconcilerManager 封装了 k8s 原生的 runtime-controller/Manager。其 struc
 - Setup()：对应 ReconcilerSetuper 的 Setup()，正式安装 ReconcilerSetuper 列表中的所有 Setuper。
 - Run()：启动整个 ReconcilerManager，通过 k8s Manager 的 Start() 函数启动。
 
-ReconcilerManager 封装 k8s 原生 Manager 的主要目的是：
+#### RuntimeManager
 
-- 隐藏一些原生 Manager 的初始化的细节。
+ReconcilerManager 封装 k8s 原生的 RuntimeManager 的主要目的是：
+
+- 隐藏一些原生 RuntimeManager 的初始化的细节。
 - 提供了一种在缓存同步后，执行回调的机制。
 - 提供可以根据配置文件来启用、禁止某些 Reconciler 的机制。
 - 支持资源过滤，仅仅让 Reconciler 看到一部分资源。
@@ -133,47 +131,6 @@ go run cmd/reconcilers/at/main.go -c configs/kubecontroller.yaml
 ```bash
 kubectl apply -f manifests/at/cr.yaml
 ```
-
-#### 开发步骤
-
-简单提一下实际开发的步骤：
-
-- 定义 API 资源。
-- 实现 Reconciler 接口。
-- 为 API 资源生成标准的 API Extension 以及定义必要的 HTTP 接口。
-- 定义 Web backend 对外提供的接口。
-
-##### 定义API资源
-
-生成 Go Type 文件：
-
-- 创建 `xxx_type.go` 文件，并定义 `xxx` 与 `xxxList` 结构体，并且 register 该结构体
-- 构建 DeepCopy
-
-```shell
-bin/controller-gen object paths="./..."
-```
-
-##### 实现Reconciler接口
-
-在 `pkg/reconcilers/xxx/xxx.go` 文件内编写：
-
-- init()：
-- reconcile() 的逻辑
-
-##### 创建cmd
-
-
-
-##### 创建manifests
-
-- 自动生成 CRD
-
-```shell
-controller-gen crd paths=./... output:crd:dir=manifests 
-```
-
-- 自定义 CR
 
 ### ReconcilerHub
 
@@ -271,6 +228,23 @@ kubectl -s http://127.0.0.1:6080 -n default get users
 ### Frontend
 
 基于 JavaScript、React 等的真正前端。
+
+## 开发步骤
+
+简单提一下实际开发的步骤：
+
+- 基于 [kubebuilder 开发指南](30_crd-operator/60_kubebuilder/README.md) 开发 Controller：同时也会生成各种 manifests（CRD 及 CR），并将 manifests 拷贝到 configs/xxx/目录下。
+- Go run 运行并测试：
+  - 通过 make run.xxx 运行
+  - 通过 make test.xxx 测试
+
+- 镜像形式运行并测试：
+  - 在 build/dockerfile/xxx/ 目录下创建 Dockerfile 文件
+  - 在 configs/xxx/rbac/ 目录下创建用于 k8s RBAC 相关的 YAML 文件
+  - 将 shell 环境调整为测试使用的 k8s 的 context
+  - 通过 make deploy.xxx 以容器 k8s 的形式运行
+  - 通过 make test.xxx 测试
+
 
 ## 扩展机制
 
