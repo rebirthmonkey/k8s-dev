@@ -252,27 +252,23 @@ kubectl -s http://127.0.0.1:6080 -n default get users
 
 #### 基本概念
 
-- WorkflowDefinition：流程模板，对应 typs.go 中的 Spec
-  - DAG：有向无环图，由 Object（流程模板中的元素）组成，Object 具体分为：
-    - Event：
-      - Start：
-      - Waiting：做一些 pre-check 以及初始化配置
-      - Pending：
-      - Doing：真正开始执行 execte()
-      - End：Succeeded、Failed、Aborted
-  
-    - Gateway：
-      - 分散：根据判断条件选择不同分支
-      - 聚合：多个分支聚合到一起
-  
-    - Activity：可以注册不同的 ActivityExecutor Type，来实现不同的 Activity 类型
-      - Executor：对流程中具体执行内容的封装，如 KubeController、Binary 等
-- WorkflowExecution：运行中的流程实例，记录流程当前执行的状态，对应 types.go 中的 Status
-  - DAG：
+- WorkflowTemplate：流程模板。它基于有向无环图 DAG，由 Object（流程模板中的元素）组成，Object 具体分为：
+  - Event：
+    - Start：
+    - Waiting：做一些 pre-check 以及初始化配置
+    - Pending：
+    - Doing：真正开始执行 execte()
+    - End：Succeeded、Failed、Aborted
+  - Gateway：
+    - 分散：根据判断条件选择不同分支
+    - 聚合：多个分支聚合到一起
+  - Activity：可以注册不同的 ActivityExecutor Type，来实现不同的 Activity 类型
+    - Executor：对流程中具体执行内容的封装，如 KubeController、Binary 等
+- WorkflowExecution：运行中的流程实例，记录流程当前执行的状态，对应 types.go 中的 Status，它同样是基于 DAG 实现的。
   - Entry：流程执行过程中的元素，Definition 中 Object 的实例化。
-    - Phase：运行时 DAG 实时流转的状态，对应 Object/Event
-    - Reason：对 entry 状态的解释
-    - FinishTime：结束时间00
+    - Phase：运行时 DAG 实时流转的状态，对应 Object/Event。
+    - Reason：对 entry 状态的解释。
+    - FinishTime：结束时间。
 - Engine：具体执行 workflow 的 Executor 的接口
   - EngineExecutor：Engine 接口的实现
     - Config：配置项
@@ -289,7 +285,7 @@ kubectl -s http://127.0.0.1:6080 -n default get users
     - Updated：是否更新
     - Failed：是否运行失败
 
-## _Bak
+
 
 
 
