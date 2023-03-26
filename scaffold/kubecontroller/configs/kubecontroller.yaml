@@ -1,7 +1,7 @@
 reconcilermgr:
   metrics-bind-address: ":18001"
   health-probe-bind-address: ":18002"
-  concurrence: 8
+  concurrence: 1
   apiserver-enabled: true
 #  kubeconfig: "/tmp/cls-j7xitnn8-config"
   kubeconfig: ""

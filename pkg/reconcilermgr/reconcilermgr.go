@@ -98,7 +98,6 @@ func (rmgr *ReconcilerManager) PrepareRun(scheme *runtime.Scheme) *PreparedRecon
 
 	rmgr.scheme = scheme
 
-	//mgr, err := ctrl.NewManager(config, ctrl.Options{
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:           rmgr.scheme,
 		Port:             9443,

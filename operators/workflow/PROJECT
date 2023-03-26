@@ -1,0 +1,16 @@
+domain: wukong.com
+layout:
+- go.kubebuilder.io/v3
+projectName: workflow
+repo: github.com/rebirthmonkey/k8s-dev/operators/workflow
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: wukong.com
+  group: tool
+  kind: Workflow
+  path: github.com/rebirthmonkey/k8s-dev/operators/workflow/api/v1
+  version: v1
+version: "3"
