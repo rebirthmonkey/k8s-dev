@@ -35,10 +35,29 @@ spec:
           spec:
             description: WorkflowSpec defines the desired state of Workflow
             properties:
-              foo:
+              activities:
+                items:
+                  type: string
+                type: array
+              edges:
+                items:
+                  properties:
+                    obj1:
+                      type: string
+                    obj2:
+                      type: string
+                  type: object
+                type: array
+              events:
                 description: Foo is an example field of Workflow. Edit workflow_types.go
                   to remove/update
-                type: string
+                items:
+                  type: string
+                type: array
+              gateways:
+                items:
+                  type: string
+                type: array
             type: object
           status:
             description: WorkflowStatus defines the observed state of Workflow

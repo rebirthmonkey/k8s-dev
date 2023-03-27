@@ -3,4 +3,29 @@ kind: Workflow
 metadata:
   name: workflow-sample
 spec:
-  # TODO(user): Add fields here
+  events:
+  - "Start"
+  - "Doing"
+  - "End"
+  activities:
+  - "a1"
+  - "a2"
+  - "a3"
+  gateways:
+  - "g1"
+  edges:
+  - obj1: "Start"
+    obj2: "Doing"
+  - obj1: "Doing"
+    obj2: "a1"
+  - obj1: "a1"
+    obj2: "a2"
+  - obj1: "a1"
+    obj2: "a3"
+  - obj1: "a2"
+    obj2: "g1"
+  - obj1: "a3"
+    obj2: "g1"
+  - obj1: "g1"
+    obj2: "End"
+

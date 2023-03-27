@@ -6,6 +6,8 @@ require (
 	github.com/antchfx/jsonquery v1.3.2
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-logr/logr v1.2.3
+	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
+	github.com/goombaio/dag v0.0.0-20181006234417-a8874b1f72ff
 	github.com/jinzhu/copier v0.3.5
 	github.com/marmotedu/component-base v1.6.2
 	github.com/mitchellh/hashstructure/v2 v2.0.2
@@ -53,6 +55,8 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/goombaio/orderedmap v0.0.0-20180924084748-ba921b7e2419 // indirect
+	github.com/goombaio/orderedset v0.0.0-20180924084730-d1b9fdd81eca // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
