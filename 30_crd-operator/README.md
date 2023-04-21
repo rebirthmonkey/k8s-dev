@@ -159,6 +159,8 @@ Operator 的发布一般包括：
 
 ### Controller vs. Operator
 
+有时候 Controller 也被叫做 Operator。这两个术语的混用有时让人感到迷惑。Controller 是一个通用的术语，凡是遵循  “Watch K8s 资源并根据资源变化进行调谐” 模式的控制程序都可以叫做 Controller。而 Operator 是一种专用的  Controller，用于在 k8s 中管理一些复杂的、有状态的应用。例如在 k8s 中管理 MySQL  数据库的 MySQL Operator。
+
 - Controller：实现了控制循环，它通过 kube-apiserver 观测集群中的共享状态、进行必要的变更，尝试把当前状态转换到期望的目标状态。Controller 可以观察并操作 k8s 的核心资源以及用户自定义 CRD 资源。
 - Operator：Operator 是一种 Controller，但除了控制逻辑，它还会包含一些额外运维逻辑，如应用的生命周期管理。Putting operational knowledge into software
 
@@ -198,6 +200,12 @@ kubectl get crd1s
 ### kubebuilder
 
 - [kubebuilder](60_kubebuilder/README.md)
+
+下面是采用 Informer，Controller runtime 和 Kubebuilder 来编写 Controller 的区别：
+
+- 直接使用 Informer：直接使用 Informer 编写 Controller  需要编写更多的代码，因为需要在代码处理更多的底层细节，例如如何在集群中监视资源，以及如何处理资源变化的通知。但使用 Informer 也可以更加自定义和灵活，因为可以更细粒度地控制 Controller 的行为。
+- Controller runtime：Controller runtime 是基于 Informer 实现的，在 Informer 之上为 Controller 编写提供了高级别的抽象和帮助类，包括 Leader Election、Event Handling 和 Reconcile Loop 等等。使用 Controller runtime，可以更容易地编写和测试 Controller，因为它已经处理了许多底层的细节。
+- Kubebuilder：和 Informer 及 Controller runtime 不同，Kubebuilder 并不是一个代码库，而是一个开发框架。Kubebuilder 底层使用了 controller-runtime。Kubebuilder 提供了 CRD 生成器和代码生成器等工具，可以帮助开发者自动生成一些重复性的代码和资源定义，提高开发效率。同时，Kubebuilder 还可以生成  Webhooks，以用于验证自定义资源。
 
 ## Ref
 
