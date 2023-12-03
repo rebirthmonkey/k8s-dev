@@ -25,8 +25,6 @@ k8s 内包含 3 个独立的 server，用于将功能进行解耦，分别是：
 
 对 k8s 进行扩展，并通过 aggregatorscheme.Scheme 注册管理相关资源。
 
-
-
 ### kube-apiserver
 
 k8s 内置核心资源服务，并通过 legacyscheme.Scheme 注册管理资源。

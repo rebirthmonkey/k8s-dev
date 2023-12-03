@@ -159,7 +159,7 @@ Operator 的发布一般包括：
 
 ### Controller vs. Operator
 
-有时候 Controller 也被叫做 Operator。这两个术语的混用有时让人感到迷惑。Controller 是一个通用的术语，凡是遵循  “Watch K8s 资源并根据资源变化进行调谐” 模式的控制程序都可以叫做 Controller。而 Operator 是一种专用的  Controller，用于在 k8s 中管理一些复杂的、有状态的应用。例如在 k8s 中管理 MySQL  数据库的 MySQL Operator。
+有时候 Controller 也被叫做 Operator。这两个术语的混用有时让人感到迷惑。Controller 是一个通用的术语，凡是遵循  “Watch K8s 资源并根据资源变化进行调谐” 模式的控制程序都可以叫做 Controller。而 Operator 是一种专用的  Controller，用于在 k8s 中管理一些复杂的、有状态的应用。例如在 k8s 中管理 MySQL 数据库的 MySQL Operator。
 
 - Controller：实现了控制循环，它通过 kube-apiserver 观测集群中的共享状态、进行必要的变更，尝试把当前状态转换到期望的目标状态。Controller 可以观察并操作 k8s 的核心资源以及用户自定义 CRD 资源。
 - Operator：Operator 是一种 Controller，但除了控制逻辑，它还会包含一些额外运维逻辑，如应用的生命周期管理。Putting operational knowledge into software
